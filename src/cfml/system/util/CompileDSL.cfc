@@ -916,36 +916,53 @@ component accessors=true {
 	 * @extension The class file extension to include.
 	 * @returns Nothing. The response file is written to disk.
 	 */
-	function writeTempClassFiles( string tempSrcFileName, array sourcePath = getSourcePaths(), string extension=".class" ) {
-
-		var classOutput = fileSystemutil.normalizeSlashes(
-			fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() )
+	function writeTempClassFiles(
+		string tempSrcFileName,
+		array sourcePath = getSourcePaths(),
+		string extension = ".class"
+	) {
+		var classOutput = reReplace(
+			fileSystemutil.normalizeSlashes( fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() ) ),
+			"/+$",
+			""
 		);
-
-		var globber = wirebox.getInstance( 'globber' );
-
-		currentSourceList = globber
+		var globber = wirebox.getInstance( "globber" );
+		var entries = globber
 			.setPattern( sourcePath )
 			.asQuery()
 			.matches()
-			.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
-			.reduce(( acc, row ) => {
+			.filter( ( row ) => compareNoCase( row.type, "file" ) == 0 && row.name.endsWith( extension ) )
+			.reduce( ( acc, row ) => {
 				var relativeDirectory = replaceNoCase(
-					fileSystemutil.normalizeSlashes( row.directory ),
+					reReplace( fileSystemutil.normalizeSlashes( row.directory ), "/+$", "" ),
 					classOutput,
 					""
 				);
 				relativeDirectory = reReplace( relativeDirectory, "^/+", "" );
 				var relativePath = relativeDirectory.len() ? relativeDirectory & "/" & row.name : row.name;
-				return listappend( acc, "-C #classOutput# #relativePath#", chr(10) );
-			}, "")
+				if(
+					relativePath.startsWith( "/" )
+					|| find( ":", relativePath )
+					|| findNoCase( classOutput, relativePath )
+				) {
+					throw(
+						message = "Cannot compute a path for [#relativePath#] relative to classes directory "
+							& "[#classOutput#].",
+						type = "commandException"
+					);
+				}
+				return listAppend( acc, "-C #classOutput# #relativePath#", chr( 10 ) );
+			}, "" );
 
-		/* job.addLog( "currentSourceList -> " & serialize( currentSourceList ) );
-		job.addLog( "currentSourceList -> " & currentSourceList.len() ); */
+		if( !entries.len() ) {
+			throw(
+				message = "No #extension# files found in classes directory [#classOutput#].",
+				detail = "Check toClasses() and the compiled output before creating a JAR.",
+				type = "commandException"
+			);
+		}
 
-		/* job.addLog( "finalSourceList -> " & finalSourceList ); */
-
-		fileWrite( tempSrcFileName, currentSourceList );
+		fileWrite( tempSrcFileName, entries );
 	}
 
 	/**

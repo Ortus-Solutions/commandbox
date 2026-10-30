@@ -81,6 +81,12 @@ java compile --jar jarName=example.jar
 
 The returned `result.jarPath` contains the generated JAR path.
 
+JAR class entries are relative to the configured classes directory, including
+when it has a trailing separator or spaces in its path. Files outside that
+directory are rejected before invoking `jar`. If no `.class` files are found,
+the error names the classes directory and patterns, and distinguishes an empty
+compilation output from a pattern that missed existing compiled classes.
+
 ## Configure Source, Classes, and JAR Locations
 
 ```js

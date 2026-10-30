@@ -1391,6 +1391,107 @@ component {
 		print.greenLine( "Compile interception scripts test passed." );
 	}
 
+	function classPathRegressions( boolean verbose = false ) {
+		distClassPaths( arguments.verbose );
+		globberPatternConsistency();
+		classEntryValidation();
+	}
+
+	/** @test */
+	function distClassPaths( boolean verbose = false ) {
+		var project = resolvePath( "build/dist-path-fixture" );
+		directoryCreate( project & "/src/main/java", true, true );
+		fileWrite( project & "/src/main/java/Placeholder.java", "public class Placeholder {}" );
+		fileWrite( project & "/box.json", serializeJSON( {
+			"slug" : "dist-paths",
+			"version" : "1.0.0",
+			"java" : {
+				"classes" : "dist/classes/",
+				"libsDir" : "dist/libs",
+				"jar" : true,
+				"fatJar" : true
+			}
+		} ) );
+		var result = compile( project ).setVerbose( arguments.verbose ).run();
+		assertJarEntryExists( result.jarPath, "Placeholder.class" );
+		assertJarEntryMissing( result.jarPath, "dist/classes/Placeholder.class" );
+
+		var explicit = compile( project )
+			.toClasses( "dist/release/classes with spaces/" )
+			.libsDir( "dist/release/libs" )
+			.run();
+		assertJarEntryExists( explicit.jarPath, "Placeholder.class" );
+		print.greenLine( "Dist and release-layout JAR paths passed." ).toConsole();
+	}
+
+	/** @test */
+	function globberPatternConsistency( boolean verbose = false ) {
+		var classes = resolvePath( "build/globber-fixture" );
+		directoryCreate( classes & "/nested", true, true );
+		fileWrite( classes & "/Root.class", "" );
+		fileWrite( classes & "/nested/Child.class", "" );
+		for( var suffix in [ "/**.class", "/**/*.class", "/*.class" ] ) {
+			var cleanClasses = reReplace( classes, "[\\/]+$", "" );
+			for( var directory in [ replace( cleanClasses, "\", "/", "all" ), cleanClasses ] ) {
+				var pattern = directory & suffix;
+				var globber = wirebox.getInstance( "globber" );
+				var stringMatches = globber.setPattern( pattern ).asQuery().matches();
+				var arrayMatches = wirebox.getInstance( "globber" )
+					.setPattern( [ pattern ] ).asQuery().matches();
+				assertEquals( suffix == "/*.class" ? 1 : 2, stringMatches.recordCount );
+				assertEquals( serializeJSON( stringMatches ), serializeJSON( arrayMatches ) );
+				for( var row in stringMatches ) {
+					assertStructKeys( row, [ "directory", "name", "type" ] );
+					assertEquals( true, compareNoCase( row.type, "file" ) == 0 );
+					assertEquals( true, fileExists( row.directory & "/" & row.name ) );
+				}
+			}
+		}
+		print.greenLine( "String, array, and row shape checks passed." ).toConsole();
+	}
+
+	/** @test */
+	function classEntryValidation( boolean verbose = false ) {
+		var classes = reReplace( resolvePath( "build/class-entry-validation" ), "[\\/]+$", "" );
+		directoryCreate( classes & "/empty", true, true );
+		directoryCreate( classes & "/empty/NotAFile.class", true, true );
+		directoryCreate( classes & "/populated", true, true );
+		fileWrite( classes & "/populated/Present.class", "" );
+		var responseFile = classes & "/entries.txt";
+		try {
+			for( var folder in [ "empty", "populated", "missing" ] ) {
+				var output = classes & "/" & folder;
+				var dsl = compile().toClasses( output );
+				var caught = false;
+				try {
+					var pattern = output & ( folder == "populated" ? "/**/Absent.class" : "/**.class" );
+					dsl.writeTempClassFiles( responseFile, [ pattern ] );
+				} catch( commandException e ) {
+					caught = true;
+					assertEquals( true, e.message.contains( "No .class files found" ) );
+					assertEquals( true, e.message.contains( folder ) );
+					assertEquals( true, e.message.contains( fileSystemUtil.normalizeSlashes( output ) ) );
+				}
+				assertEquals( true, caught );
+				assertFileMissing( responseFile );
+			}
+			var caught = false;
+			try {
+				compile().toClasses( classes & "/empty" )
+					.writeTempClassFiles( responseFile, [ classes & "/populated/**.class" ] );
+			} catch( commandException e ) {
+				caught = true;
+				assertEquals( true, e.message.contains( "Present.class" ) );
+				assertEquals( true, e.message.contains( "relative to classes directory" ) );
+			}
+			assertEquals( true, caught );
+			assertFileMissing( responseFile );
+		} finally {
+			if( fileExists( responseFile ) ) fileDelete( responseFile );
+		}
+		print.greenLine( "Empty, unmatched, missing, and out-of-root class checks passed." ).toConsole();
+	}
+
 	private function assertFileExists( required string filePath ) {
 		if( !fileExists( arguments.filePath ) ) {
 			error( "Expected file was not created: #arguments.filePath#" );
