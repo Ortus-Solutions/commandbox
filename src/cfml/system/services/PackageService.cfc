@@ -444,7 +444,6 @@ component accessors="true" singleton {
 						tmpinstallDirectory = listDeleteAt( tmpinstallDirectory, listLen( tmpinstallDirectory, '/', true ), '/', true );
 						// Always use the box.json in the BoxLang home, regardless of where the user is installing from.
 						packagePathRequestingInstallation = tmpinstallDirectory;
-						job.addLog( packagePathRequestingInstallation: packagePathRequestingInstallation )
 					}
 				// ContentBox Modules
 				} else if( packageType == 'contentbox-modules' ) {

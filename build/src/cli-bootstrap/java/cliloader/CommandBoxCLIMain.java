@@ -43,6 +43,7 @@ public class CommandBoxCLIMain {
 	private static final String BOXLANG_INSTALL_HOME_ENVIRONMENT = "BOXLANG_INSTALL_HOME";
 	private static final String BVM_HOME_ENVIRONMENT = "BVM_HOME";
 	private static boolean debugEnabled;
+	private static volatile boolean mainDone = false;
 
 	/**
 	 * Installs BoxLang when needed, then launches the installed runtime and
@@ -52,6 +53,7 @@ public class CommandBoxCLIMain {
 	 * @throws Exception If the runtime cannot be loaded or invoked.
 	 */
 	public static void main(String[] arguments) throws Exception {
+		registerShutdownHook();
 		debugEnabled = containsDebugFlag(arguments);
 		debug("CLI Java Version: "
 				+ System.getProperty("java.vm.version", System.getProperty("java.version", "Unknown")));
@@ -103,6 +105,38 @@ public class CommandBoxCLIMain {
 		createBoxLauncher(boxLang.getExecutable());
 		launchBoxLang(boxLang.getExecutable(), boxLangHome, commandBoxHome, arguments, boxLang.getSource(),
 				workingDirectory);
+		mainDone = true;
+	}
+
+	/**
+	 * Interrupts the main thread when the JVM is shutting down so CommandBox can stop
+	 * anything it started (such as a server) before the process exits.
+	 *
+	 * This matters when there is no interactive terminal to deliver a Ctrl-C to-- for
+	 * example a process started by a service manager, which sends a console control
+	 * event that becomes a shutdown rather than a keystroke.  Without this, the JVM
+	 * simply exits and any child processes CommandBox started are left running.
+	 *
+	 * Mirrors the hook the old {@code LoaderCLIMain} registered.
+	 */
+	private static void registerShutdownHook() {
+		Thread mainThread = Thread.currentThread();
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			debug("ShutdownHook - received SIGTERM, interrupting main thread");
+			mainThread.interrupt();
+			for (int i = 1; i <= 10; i++) {
+				if (mainDone) {
+					debug("ShutdownHook - main thread done");
+					return;
+				}
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					break;
+				}
+			}
+			debug("ShutdownHook - gave up waiting on main thread");
+		}));
 	}
 
 	/**

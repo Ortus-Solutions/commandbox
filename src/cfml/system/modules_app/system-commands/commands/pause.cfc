@@ -11,8 +11,33 @@ component excludeFromHelp=true {
 
 
 	function run()  {
-		waitForKey( 'Press any key to continue...' );
-		print.line();
+
+		try {
+
+			// A dumb terminal (no TTY, such as a server started as a service) can't read a key press,
+			// so output the equivalent message and just sit and wait to be interrupted, same as the
+			// server command does when starting a console server.  Nothing can be pressed here.
+			if( shell.isTerminalDumb() ) {
+				print.line( 'Waiting for interrupt' ).toConsole();
+				while( true ) {
+					sleep( 500 );
+				}
+			} else {
+				waitForKey( 'Press any key to continue...' );
+				print.line();
+			}
+
+		// An interrupt is a normal way for a pause to end-- don't blow up over it.
+		// Ctrl-C arrives as UserInterruptException, Ctrl-D as EndOfFileException,
+		// and an interrupted sleep() as a NativeException with the message "sleep interrupted"
+		} catch( any e ) {
+			var normalExit = [ 'UserInterruptException', 'EndOfFileException' ].findNoCase( e.type ?: '' )
+				|| ( e.message ?: '' ).contains( 'interrupted' );
+
+			if( !normalExit ) {
+				rethrow;
+			}
+		}
 	}
 
 

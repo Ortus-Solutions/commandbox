@@ -1,0 +1,32 @@
+/**
+ * Best-effort JVM shutdown hook.  Interrupts the recorded main thread so CommandBox can
+ * stop anything it started (such as a server) before the JVM exits.
+ *
+ * Used by the CommandBox CLI when running directly on BoxLang (box.bat -> boxlang.bat),
+ * where there is no Java bootstrap to register this for us.
+ */
+class {
+
+	property name="mainThread";
+
+	function init( required mainThread ) {
+		variables.mainThread = arguments.mainThread;
+		return this;
+	}
+
+	/**
+	 * Called by the JVM on shutdown.
+	 */
+	function run() {
+		try {
+			variables.mainThread.interrupt();
+
+			// The JVM halts as soon as every shutdown hook returns, so wait for the main
+			// thread to finish its cleanup (i.e. stop the server) or it never gets to run.
+			variables.mainThread.join( javacast( "long", 10000 ) );
+		} catch( any e ) {
+			// Nothing useful to do while the JVM is going away
+		}
+	}
+
+}

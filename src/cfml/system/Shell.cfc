@@ -308,6 +308,12 @@ component accessors="true" singleton {
  	 **/
 	string function ask( message, string mask='', string defaultResponse='', keepHistory=false, highlight=false, complete=false ) {
 
+		// Dumb terminals have no TTY, so JLine can't read a response. Throw a useful error rather
+		// than letting readLine() fail with "The handle is invalid"
+		if( isTerminalDumb() ) {
+			throw( message='Cannot ask a question on a dumb terminal (no interactive console).', type="commandException" );
+		}
+
 		try {
 
 			if( !highlight ) {
@@ -392,6 +398,13 @@ component accessors="true" singleton {
  	 **/
 	string function waitForKey( message='' ) {
 		var key = '';
+
+		// Dumb terminals have no TTY, so JLine can't bind any keys for them. Throw a useful error
+		// rather than letting KeyMap.bind() blow up with a NullPointerException.
+		if( isTerminalDumb() ) {
+			throw( message='Cannot read a key press from a dumb terminal (no interactive console).', type="commandException" );
+		}
+
 		if( len( arguments.message ) ) {
 			printString( arguments.message );
 		}
@@ -958,6 +971,15 @@ component accessors="true" singleton {
 		return '';
 	}
 
+
+	/**
+	 * Is the current terminal a JLine "dumb" terminal?  Dumb terminals have no TTY, so they
+	 * cannot read keys or lines-- JLine throws errors if you try.
+	 * @returns boolean
+  	 **/
+	boolean function isTerminalDumb() {
+		return getReader().getTerminal().getClass().getName() contains 'dumb';
+	}
 
 	/**
 	 * Is the current terminal interactive?

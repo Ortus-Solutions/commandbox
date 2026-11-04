@@ -56,6 +56,12 @@ class {
 		// Load up our dependencies
 		boxRuntime.getModuleService().loadModules( Paths.get( moduleRoot, ["cli_modules"] ) );
 
+		// When the Java bootstrap launched us in-process it registers its own shutdown hook that
+		// interrupts the main thread, so don't add a second one here.
+		if( !calledByInstaller ) {
+			registerShutdownHook();
+		}
+
 		server.unlock();
 		boxAnnounce( "onServerScopeCreation", { scope : server } );
 
@@ -106,6 +112,25 @@ class {
 			boxRuntime.shutdown();
 			System.exit( exitCode );
 		}
+	}
+
+	/**
+	 * Registers a JVM shutdown hook that interrupts the main thread so CommandBox can stop
+	 * anything it started (such as a server) before the process exits.
+	 *
+	 * This is what makes a Ctrl-C from a service manager (NSSM, systemd, etc.) stop the
+	 * server.  There is no interactive terminal there, so JLine never registers its native
+	 * signal handler and no keystroke is ever delivered-- the control event becomes a plain
+	 * JVM shutdown instead.  Interrupting main lets the normal interrupt handling run.
+	 */
+	private function registerShutdownHook() {
+		// main() runs on the main thread, so that's the one to interrupt
+		mainThread = createObject( "java", "java.lang.Thread" ).currentThread();
+
+		hookThread = createObject( "java", "java.lang.Thread" ).init(
+			createDynamicProxy( new ShutdownInterruptor( mainThread = mainThread ), [ "java.lang.Runnable" ] )
+		);
+		createObject( "java", "java.lang.Runtime" ).getRuntime().addShutdownHook( hookThread );
 	}
 
 	/**

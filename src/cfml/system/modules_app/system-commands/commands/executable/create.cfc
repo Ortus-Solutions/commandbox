@@ -4,6 +4,9 @@
  * {code:bash}
  * executable create myExecutable "box myScript.bxs"
  * {code}
+ * .
+ * The executable exports its full path as BOX_PROCESS_PATH unless that variable is already set.
+ * Nested executable aliases preserve the original path.
  *
  **/
 component {
