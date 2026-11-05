@@ -98,7 +98,8 @@ component accessors=true {
 		setFatJarOptions( {
 			"mergeServiceDescriptors" : true,
 			"excludeSignatures"       : true,
-			"duplicatePolicy"         : "last"
+			"duplicatePolicy"         : "last",
+			"mergeLog4jPluginCaches"  : false
 		} );
 		setJavaDocDestinationDir('build/docs/javadoc');
 		setUseJavaDoc(false);
@@ -536,13 +537,14 @@ component accessors=true {
 	}
 
 	/**
-	 * Configures duplicate, signature, and service-descriptor handling for fat JARs.
+	 * Configures duplicate, signature, service-descriptor, and Log4j 2 plugin cache
+	 * handling for fat JARs.
 	 *
-	 * @options Fat JAR options including duplicatePolicy, excludeSignatures, and mergeServiceDescriptors.
+	 * @options Fat JAR options including duplicatePolicy, excludeSignatures, mergeServiceDescriptors, and mergeLog4jPluginCaches.
 	 * @returns The current DSL instance.
 	 */
 	function configureFatJar( required struct options ) {
-		var supportedOptions = [ "mergeServiceDescriptors", "excludeSignatures", "duplicatePolicy" ];
+		var supportedOptions = [ "mergeServiceDescriptors", "excludeSignatures", "duplicatePolicy", "mergeLog4jPluginCaches" ];
 		for( var optionName in arguments.options ) {
 			if( !supportedOptions.findNoCase( optionName ) ) {
 				throw(
@@ -894,7 +896,10 @@ component accessors=true {
 				.matches()
 				.filter(( row ) => row.type=="file" && row.name.endsWith( extension ))
 				.reduce(( acc, row ) => {
-					return listappend( acc, row.directory & "/" & row.name, chr(10) );
+					// javac splits its response file on whitespace and treats a backslash as
+					// an escape character, so every path is quoted and uses forward slashes.
+					var sourceFile = fileSystemutil.normalizeSlashes( row.directory ) & "/" & row.name;
+					return listappend( acc, '"' & sourceFile & '"', chr(10) );
 				}, "")
 
         //job.addLog( " sList-> #serialize(sourceList)# " );
@@ -951,7 +956,9 @@ component accessors=true {
 						type = "commandException"
 					);
 				}
-				return listAppend( acc, "-C #classOutput# #relativePath#", chr( 10 ) );
+				// The jar tool splits its response file on whitespace and treats a backslash
+				// as an escape character, so every path is quoted and uses forward slashes.
+				return listAppend( acc, '-C "#classOutput#" "#relativePath#"', chr( 10 ) );
 			}, "" );
 
 		if( !entries.len() ) {
@@ -1431,6 +1438,7 @@ component accessors=true {
 			"thinJarPath"    : arguments.thinJarPath,
 			"manifestEntry"  : "",
 			"services"       : [],
+			"log4jCaches"    : [],
 			"sources"        : [],
 			"winningSources" : {},
 			"duplicates"     : [],
@@ -1459,6 +1467,11 @@ component accessors=true {
 					if( getVerbose() ) {
 						job.addLog( "Skipping [META-INF/INDEX.LIST] from #getFileFromPath( arguments.thinJarPath )#." );
 					}
+					continue;
+				}
+				// Log4j 2 ships one plugin cache per JAR at a shared path; keep them for merging
+				if( arguments.options.mergeLog4jPluginCaches && isLog4jPluginCacheEntry( thinEntryName ) ) {
+					plan.log4jCaches.append( { "type" : "jar", "path" : arguments.thinJarPath, "entryName" : thinEntryName } );
 					continue;
 				}
 				plan.winningSources[ thinEntryName ] = arguments.thinJarPath;
@@ -1505,6 +1518,11 @@ component accessors=true {
 							plan.services.append( serviceIndex[ entryName ] );
 						}
 						serviceIndex[ entryName ].sourceJars.append( dependencyJar );
+						continue;
+					}
+					// Log4j 2 plugin caches are merged into one file regardless of the duplicate policy
+					if( arguments.options.mergeLog4jPluginCaches && isLog4jPluginCacheEntry( entryName ) ) {
+						plan.log4jCaches.append( { "type" : "jar", "path" : dependencyJar, "entryName" : entryName } );
 						continue;
 					}
 
@@ -1560,6 +1578,11 @@ component accessors=true {
 					serviceIndex[ resource.entryName ].resourceFiles.append( resource.filePath );
 					continue;
 				}
+				// A project resource can also ship a Log4j 2 plugin cache; merge it like the JAR copies
+				if( arguments.options.mergeLog4jPluginCaches && isLog4jPluginCacheEntry( resource.entryName ) ) {
+					plan.log4jCaches.append( { "type" : "file", "path" : resource.filePath, "entryName" : resource.entryName } );
+					continue;
+				}
 
 				plan.winningSources[ resource.entryName ] = resourceSourceKey;
 				resourceEntries.append( resource );
@@ -1574,6 +1597,10 @@ component accessors=true {
 		}
 
 		plan.entryCount = structCount( plan.winningSources ) + plan.services.len();
+		// The merged Log4j 2 plugin cache is one extra generated entry when any input ships one
+		if( plan.log4jCaches.len() ) {
+			plan.entryCount++;
+		}
 		return plan;
 	}
 
@@ -1723,6 +1750,15 @@ component accessors=true {
 					jarOut,
 					service.name,
 					buildMergedServiceContent( arguments.mergePlan.thinJarPath, service ),
+					storeEntries,
+					writtenDirectories
+				);
+			}
+
+			if( arguments.mergePlan.log4jCaches.len() ) {
+				writeMergedLog4jPluginCache(
+					jarOut,
+					arguments.mergePlan.log4jCaches,
 					storeEntries,
 					writtenDirectories
 				);
@@ -2038,6 +2074,323 @@ component accessors=true {
 			jarFile.close();
 		}
 	}
+
+	/**
+	 * Reads an archive entry as raw bytes.
+	 *
+	 * @jarPath The archive to read.
+	 * @entryName The entry to read.
+	 * @returns The entry content as a byte array.
+	 */
+	private any function readJarEntryBytes( required string jarPath, required string entryName ) {
+		var jarFile = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarPath );
+		try {
+			var entry = jarFile.getJarEntry( arguments.entryName );
+			if( isNull( entry ) ) {
+				throw(
+					message="Fat JAR entry is missing: #arguments.entryName#",
+					detail="The entry was present while scanning #arguments.jarPath# but could not be read back.",
+					type="commandException"
+				);
+			}
+			var inputStream = jarFile.getInputStream( entry );
+			try {
+				return readStreamBytes( inputStream );
+			} finally {
+				inputStream.close();
+			}
+		} finally {
+			jarFile.close();
+		}
+	}
+
+	/**
+	 * Returns the archive path Log4j 2 uses for its generated plugin cache.
+	 *
+	 * Every Log4j 2 plugin JAR ships a cache at this exact path, which is why a
+	 * flat merge can only keep one of them unless they are combined first.
+	 *
+	 * @returns The canonical Log4j 2 plugin cache archive path.
+	 */
+	private string function getLog4jPluginCacheEntryName() {
+		return "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat";
+	}
+
+	/**
+	 * Checks whether an archive entry is a Log4j 2 plugin cache.
+	 *
+	 * @entryName The archive entry name.
+	 * @returns True when the entry is the Log4j 2 plugin cache.
+	 */
+	private boolean function isLog4jPluginCacheEntry( required string entryName ) {
+		return arguments.entryName.equalsIgnoreCase( getLog4jPluginCacheEntryName() );
+	}
+
+	/**
+	 * Writes every Log4j 2 plugin cache found in the inputs as a single merged
+	 * entry, independent of the duplicate policy and of the input order.
+	 *
+	 * The cache is a binary format written by Log4j's own `PluginCache`. It
+	 * cannot be concatenated, so each source cache is parsed and the categories
+	 * and plugin entries are unioned before one cache is serialized. A single
+	 * source cache is copied through byte for byte instead of being rewritten.
+	 *
+	 * @jarOut The archive being written.
+	 * @caches The plugin cache sources collected while scanning the inputs.
+	 * @storeEntry True to write the entry without compression.
+	 * @writtenDirectories The directory entries already written to the output.
+	 * @returns Nothing.
+	 */
+	private function writeMergedLog4jPluginCache(
+		required any jarOut,
+		required array caches,
+		required boolean storeEntry,
+		required struct writtenDirectories
+	) {
+		var entryName = getLog4jPluginCacheEntryName();
+
+		// A single cache is passed through unchanged so its bytes stay identical
+		if( arguments.caches.len() == 1 ) {
+			var cache = arguments.caches.first();
+			if( cache.type == "jar" ) {
+				var sourceJar = createObject( "java", "java.util.jar.JarFile" ).init( cache.path );
+				try {
+					var sourceEntry = sourceJar.getJarEntry( cache.entryName );
+					if( !isNull( sourceEntry ) ) {
+						writeJarEntry(
+							arguments.jarOut,
+							sourceJar,
+							sourceEntry,
+							entryName,
+							arguments.storeEntry,
+							arguments.writtenDirectories
+						);
+					}
+				} finally {
+					sourceJar.close();
+				}
+			} else {
+				writeResourceFile(
+					arguments.jarOut,
+					cache.path,
+					entryName,
+					arguments.storeEntry,
+					arguments.writtenDirectories
+				);
+			}
+			job.addLog( "Copied the Log4j 2 plugin cache from #getFileFromPath( cache.path )#." );
+			return;
+		}
+
+		var mergedBytes = serializeLog4jPluginCache( mergeLog4jPluginCaches( arguments.caches ) );
+		writeJarEntryBytes(
+			arguments.jarOut,
+			entryName,
+			mergedBytes,
+			arguments.storeEntry,
+			arguments.writtenDirectories
+		);
+		job.addLog(
+			"Merged #arguments.caches.len()# Log4j 2 plugin caches into one entry (#mergedBytes.length# bytes)."
+		);
+	}
+
+	/**
+	 * Orders plugin cache sources by path so the merge result never depends on
+	 * the order the input JARs were listed in.
+	 *
+	 * @caches The plugin cache sources.
+	 * @returns The sources sorted by path.
+	 */
+	private array function sortLog4jPluginCaches( required array caches ) {
+		var cachesByPath = {};
+		for( var cache in arguments.caches ) {
+			cachesByPath[ cache.path ] = cache;
+		}
+		var sortedPaths = structKeyArray( cachesByPath ).sort( "textnocase" );
+		var sortedCaches = [];
+		for( var path in sortedPaths ) {
+			sortedCaches.append( cachesByPath[ path ] );
+		}
+		return sortedCaches;
+	}
+
+	/**
+	 * Reads the bytes of a plugin cache source.
+	 *
+	 * @cache A plugin cache source descriptor.
+	 * @returns The cache content as a byte array.
+	 */
+	private any function getLog4jCacheContentBytes( required struct cache ) {
+		if( arguments.cache.type == "jar" ) {
+			return readJarEntryBytes( arguments.cache.path, arguments.cache.entryName );
+		}
+		return fileReadBinary( arguments.cache.path );
+	}
+
+	/**
+	 * Parses every plugin cache source and unions their categories and plugin
+	 * entries. The first occurrence of a category key wins, matching how Log4j
+	 * itself merges multiple caches found on the class path.
+	 *
+	 * @caches The plugin cache sources.
+	 * @returns A struct of category name to plugin key to plugin entry.
+	 */
+	private struct function mergeLog4jPluginCaches( required array caches ) {
+		var merged = {};
+		for( var cache in sortLog4jPluginCaches( arguments.caches ) ) {
+			var categories = readLog4jPluginCache(
+				getLog4jCacheContentBytes( cache ),
+				cache.path
+			);
+			for( var categoryName in categories ) {
+				if( !merged.keyExists( categoryName ) ) {
+					merged[ categoryName ] = {};
+				}
+				for( var pluginKey in categories[ categoryName ] ) {
+					if( !merged[ categoryName ].keyExists( pluginKey ) ) {
+						merged[ categoryName ][ pluginKey ] = categories[ categoryName ][ pluginKey ];
+					}
+				}
+			}
+		}
+		return merged;
+	}
+
+	/**
+	 * Parses one Log4j 2 plugin cache.
+	 *
+	 * The binary layout is the one written by Log4j's `PluginCache.writeCache()`:
+	 * a category count, then each category's name and plugin count, then each
+	 * plugin's key, class name, name, and printable/defer flags.
+	 *
+	 * @contentBytes The cache content.
+	 * @sourceLabel The JAR or file the cache came from, used in error messages.
+	 * @returns A struct of category name to plugin key to plugin entry.
+	 */
+	private struct function readLog4jPluginCache( required any contentBytes, required string sourceLabel ) {
+		var categories = {};
+		var stream = createObject( "java", "java.io.DataInputStream" ).init(
+			createObject( "java", "java.io.ByteArrayInputStream" ).init( arguments.contentBytes )
+		);
+		try {
+			var categoryCount = stream.readInt();
+			if( categoryCount < 0 ) {
+				throw( message="Invalid category count", type="log4jPluginCacheException" );
+			}
+			for( var categoryNumber = 0; categoryNumber < categoryCount; categoryNumber++ ) {
+				var categoryName = stream.readUTF();
+				if( !categories.keyExists( categoryName ) ) {
+					categories[ categoryName ] = {};
+				}
+				var plugins = categories[ categoryName ];
+				var pluginCount = stream.readInt();
+				if( pluginCount < 0 ) {
+					throw( message="Invalid plugin count", type="log4jPluginCacheException" );
+				}
+				for( var pluginNumber = 0; pluginNumber < pluginCount; pluginNumber++ ) {
+					var pluginKey = stream.readUTF();
+					var className = stream.readUTF();
+					var pluginName = stream.readUTF();
+					var printable = stream.readBoolean();
+					var defer = stream.readBoolean();
+					if( !plugins.keyExists( pluginKey ) ) {
+						plugins[ pluginKey ] = {
+							"key"       : pluginKey,
+							"className" : className,
+							"name"      : pluginName,
+							"printable" : printable,
+							"defer"     : defer
+						};
+					}
+				}
+			}
+		} catch( any e ) {
+			throw(
+				message="Invalid Log4j 2 plugin cache: #arguments.sourceLabel#",
+				detail="The entry could not be read as a Log4j 2 plugin cache: #e.message#",
+				type="commandException"
+			);
+		} finally {
+			stream.close();
+		}
+		return categories;
+	}
+
+	/**
+	 * Serializes merged categories back into a Log4j 2 plugin cache.
+	 *
+	 * Categories and plugin keys are written in a stable order so the output is
+	 * byte-for-byte deterministic regardless of the input order.
+	 *
+	 * @categories The merged category and plugin structures.
+	 * @returns The serialized cache as a byte array.
+	 */
+	private any function serializeLog4jPluginCache( required struct categories ) {
+		var byteStream = createObject( "java", "java.io.ByteArrayOutputStream" ).init();
+		var dataStream = createObject( "java", "java.io.DataOutputStream" ).init( byteStream );
+		try {
+			var categoryNames = structKeyArray( arguments.categories ).sort( "textnocase" );
+			dataStream.writeInt( categoryNames.len() );
+			for( var categoryName in categoryNames ) {
+				var plugins = arguments.categories[ categoryName ];
+				var pluginKeys = structKeyArray( plugins ).sort( "textnocase" );
+				dataStream.writeUTF( categoryName );
+				dataStream.writeInt( pluginKeys.len() );
+				for( var pluginKey in pluginKeys ) {
+					var plugin = plugins[ pluginKey ];
+					dataStream.writeUTF( plugin.key );
+					dataStream.writeUTF( plugin.className );
+					dataStream.writeUTF( plugin.name );
+					dataStream.writeBoolean( plugin.printable );
+					dataStream.writeBoolean( plugin.defer );
+				}
+			}
+			dataStream.flush();
+			return byteStream.toByteArray();
+		} finally {
+			dataStream.close();
+		}
+	}
+
+	/**
+	 * Writes generated binary content into the output archive.
+	 *
+	 * @jarOut The archive being written.
+	 * @entryName The entry name to write.
+	 * @contentBytes The entry content.
+	 * @storeEntry True to write the entry without compression.
+	 * @writtenDirectories The directory entries already written to the output.
+	 * @returns Nothing.
+	 */
+	private function writeJarEntryBytes(
+		required any jarOut,
+		required string entryName,
+		required any contentBytes,
+		required boolean storeEntry,
+		required struct writtenDirectories
+	) {
+		writeParentDirectoryEntries(
+			arguments.jarOut,
+			arguments.entryName,
+			arguments.storeEntry,
+			arguments.writtenDirectories
+		);
+
+		var newEntry = createObject( "java", "java.util.jar.JarEntry" ).init( arguments.entryName );
+		if( arguments.storeEntry ) {
+			var crc = createObject( "java", "java.util.zip.CRC32" ).init();
+			crc.update( arguments.contentBytes );
+			newEntry.setMethod( createObject( "java", "java.util.zip.ZipEntry" ).STORED );
+			newEntry.setSize( javaCast( "long", arguments.contentBytes.length ) );
+			newEntry.setCrc( crc.getValue() );
+		}
+
+		arguments.jarOut.putNextEntry( newEntry );
+		arguments.jarOut.write( arguments.contentBytes );
+		arguments.jarOut.closeEntry();
+	}
+
 	/**
 	 * Replaces a file with a completed one without ever leaving the destination
 	 * missing, so an interrupted merge cannot destroy the previous JAR.

@@ -749,6 +749,217 @@ component {
 	}
 
 	/**
+	 * Log4j 2 plugin JARs all ship a plugin cache at the same archive path, so a
+	 * plain fat JAR merge keeps only one of them and every plugin from the other
+	 * JARs disappears at runtime. With mergeLog4jPluginCaches enabled the caches
+	 * are unioned into one file regardless of the duplicate policy and of the
+	 * order the JARs are supplied in.
+	 *
+	 * @test
+	 */
+	function fatJarLog4jPluginCaches( boolean verbose=false ) {
+		var cacheEntryName = "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat";
+		var coreJar = resolvePath( "libs/fat-jar-log4j-core.jar" );
+		var jsonJar = resolvePath( "libs/fat-jar-log4j-json.jar" );
+		var corruptJar = resolvePath( "libs/fat-jar-log4j-corrupt.jar" );
+		var plainOneJar = resolvePath( "libs/fat-jar-log4j-plain-one.jar" );
+		var plainTwoJar = resolvePath( "libs/fat-jar-log4j-plain-two.jar" );
+		var mergedJar = resolvePath( "build/libs/fat-jar-log4j-merged.jar" );
+		var reorderedJar = resolvePath( "build/libs/fat-jar-log4j-reordered.jar" );
+		var firstPolicyJar = resolvePath( "build/libs/fat-jar-log4j-first.jar" );
+		var errorPolicyJar = resolvePath( "build/libs/fat-jar-log4j-error.jar" );
+		var singleJar = resolvePath( "build/libs/fat-jar-log4j-single.jar" );
+		var absentJar = resolvePath( "build/libs/fat-jar-log4j-absent.jar" );
+		var defaultJar = resolvePath( "build/libs/fat-jar-log4j-default.jar" );
+		var storedJar = resolvePath( "build/libs/fat-jar-log4j-stored.jar" );
+
+		for( var jarPath in [ mergedJar, reorderedJar, firstPolicyJar, errorPolicyJar, singleJar, absentJar, defaultJar, storedJar ] ) {
+			if( fileExists( jarPath ) ) {
+				fileDelete( jarPath );
+			}
+		}
+
+		// "log4j-core" ships the bulk of the plugins, "log4j-layout-template-json" ships its own
+		createLog4jPluginCacheJar(
+			resolvePath( "fat-jar-log4j/core" ),
+			coreJar,
+			{
+				"core"   : {
+					"loggers"   : log4jPlugin( "org.apache.logging.log4j.core.config.LoggersPlugin", "Loggers" ),
+					"appenders" : log4jPlugin( "org.apache.logging.log4j.core.config.AppendersPlugin", "Appenders" )
+				},
+				"layout" : {
+					"patternlayout" : log4jPlugin( "org.apache.logging.log4j.core.layout.PatternLayout", "PatternLayout" )
+				}
+			}
+		);
+		createLog4jPluginCacheJar(
+			resolvePath( "fat-jar-log4j/json" ),
+			jsonJar,
+			{
+				"layout" : {
+					"jsontemplatelayout" : log4jPlugin(
+						"org.apache.logging.log4j.layout.template.json.JsonTemplateLayout",
+						"JsonTemplateLayout"
+					)
+				},
+				"lookup" : {
+					"jsontemplate" : log4jPlugin(
+						"org.apache.logging.log4j.layout.template.json.JsonTemplateLookup",
+						"JsonTemplateLookup"
+					)
+				}
+			}
+		);
+		createCorruptLog4jPluginCacheJar( resolvePath( "fat-jar-log4j/corrupt" ), corruptJar );
+		createResourceDependencyJar( resolvePath( "fat-jar-log4j/plain-one" ), plainOneJar, "plain one" );
+		createResourceDependencyJar( resolvePath( "fat-jar-log4j/plain-two" ), plainTwoJar, "plain two" );
+
+		// ── Two caches: one merged entry holding the union of both ──
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-log4j-merged-src.jar" )
+			.toFatJar( "fat-jar-log4j-merged.jar", [ coreJar, jsonJar ], { "mergeLog4jPluginCaches" : true } )
+			.run();
+
+		assertFileExists( mergedJar );
+		assertEquals( 1, countJarEntries( mergedJar, cacheEntryName ) );
+		var mergedEntries = readLog4jPluginCacheEntries( mergedJar );
+		assertEquals(
+			"org.apache.logging.log4j.core.config.LoggersPlugin",
+			mergedEntries[ "core:loggers" ]
+		);
+		assertEquals(
+			"org.apache.logging.log4j.core.config.AppendersPlugin",
+			mergedEntries[ "core:appenders" ]
+		);
+		assertEquals(
+			"org.apache.logging.log4j.core.layout.PatternLayout",
+			mergedEntries[ "layout:patternlayout" ]
+		);
+		assertEquals(
+			"org.apache.logging.log4j.layout.template.json.JsonTemplateLayout",
+			mergedEntries[ "layout:jsontemplatelayout" ]
+		);
+		assertEquals(
+			"org.apache.logging.log4j.layout.template.json.JsonTemplateLookup",
+			mergedEntries[ "lookup:jsontemplate" ]
+		);
+
+		// ── A stored (uncompressed) output still writes a valid merged cache ──
+		compile()
+			.setVerbose( arguments.verbose )
+			.jarOptions( { "compress" : false } )
+			.toJar( "fat-jar-log4j-stored-src.jar" )
+			.toFatJar( "fat-jar-log4j-stored.jar", [ coreJar, jsonJar ], { "mergeLog4jPluginCaches" : true } )
+			.run();
+		assertJarEntryCompression( storedJar, cacheEntryName, 0 );
+		assertEquals(
+			readJarEntryBase64( mergedJar, cacheEntryName ),
+			readJarEntryBase64( storedJar, cacheEntryName )
+		);
+
+		// ── Determinism: reversed input order and other duplicate policies match ──
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-log4j-reordered-src.jar" )
+			.toFatJar( "fat-jar-log4j-reordered.jar", [ jsonJar, coreJar ], { "mergeLog4jPluginCaches" : true } )
+			.run();
+		assertEquals(
+			readJarEntryBase64( mergedJar, cacheEntryName ),
+			readJarEntryBase64( reorderedJar, cacheEntryName )
+		);
+
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-log4j-first-src.jar" )
+			.toFatJar(
+				"fat-jar-log4j-first.jar",
+				[ coreJar, jsonJar ],
+				{ "mergeLog4jPluginCaches" : true, "duplicatePolicy" : "first" }
+			)
+			.run();
+		assertEquals(
+			readJarEntryBase64( mergedJar, cacheEntryName ),
+			readJarEntryBase64( firstPolicyJar, cacheEntryName )
+		);
+
+		// `error` must not trip on the shared cache path once merging is on
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-log4j-error-src.jar" )
+			.toFatJar(
+				"fat-jar-log4j-error.jar",
+				[ coreJar, jsonJar ],
+				{ "mergeLog4jPluginCaches" : true, "duplicatePolicy" : "error" }
+			)
+			.run();
+		assertEquals(
+			readJarEntryBase64( mergedJar, cacheEntryName ),
+			readJarEntryBase64( errorPolicyJar, cacheEntryName )
+		);
+
+		// ── One cache: byte-identical passthrough ──
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-log4j-single-src.jar" )
+			.toFatJar( "fat-jar-log4j-single.jar", [ coreJar ], { "mergeLog4jPluginCaches" : true } )
+			.run();
+		assertEquals( 1, countJarEntries( singleJar, cacheEntryName ) );
+		assertEquals(
+			readJarEntryBase64( coreJar, cacheEntryName ),
+			readJarEntryBase64( singleJar, cacheEntryName )
+		);
+
+		// ── No cache: nothing is written and the build still succeeds ──
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-log4j-absent-src.jar" )
+			.toFatJar(
+				"fat-jar-log4j-absent.jar",
+				[ plainOneJar, plainTwoJar ],
+				{ "mergeLog4jPluginCaches" : true }
+			)
+			.run();
+		assertFileExists( absentJar );
+		assertJarEntryMissing( absentJar, cacheEntryName );
+
+		// ── Omitted or false: unchanged behaviour, the merge keeps a single cache ──
+		compile()
+			.setVerbose( arguments.verbose )
+			.toJar( "fat-jar-log4j-default-src.jar" )
+			.toFatJar( "fat-jar-log4j-default.jar", [ coreJar, jsonJar ] )
+			.run();
+		assertEquals( 1, countJarEntries( defaultJar, cacheEntryName ) );
+		var defaultEntries = readLog4jPluginCacheEntries( defaultJar );
+		assertEquals( true, defaultEntries.keyExists( "layout:jsontemplatelayout" ) );
+		assertEquals( false, defaultEntries.keyExists( "core:loggers" ) );
+
+		// ── Corrupt cache: the build fails and names the offending JAR ──
+		var corruptFailed = false;
+		try {
+			compile()
+				.setVerbose( arguments.verbose )
+				.toJar( "fat-jar-log4j-corrupt-src.jar" )
+				.toFatJar(
+					"fat-jar-log4j-corrupt.jar",
+					[ coreJar, corruptJar ],
+					{ "mergeLog4jPluginCaches" : true }
+				)
+				.run();
+		} catch( any e ) {
+			corruptFailed = true;
+			assertEquals( true, e.message.contains( "Invalid Log4j 2 plugin cache" ) );
+			assertEquals( true, e.message.contains( getFileFromPath( corruptJar ) ) );
+		}
+		assertEquals( true, corruptFailed );
+		job.reset();
+		setExitCode( 0 );
+
+		print.greenLine( "Fat-JAR Log4j 2 plugin cache merge test passed." );
+	}
+
+	/**
 	 * Merging a large number of dependencies must keep the documented merge
 	 * semantics, put resources in the fat JAR even when the thin JAR has another
 	 * name, and stay linear instead of rewriting the output once per dependency.
@@ -1490,6 +1701,201 @@ component {
 			if( fileExists( responseFile ) ) fileDelete( responseFile );
 		}
 		print.greenLine( "Empty, unmatched, missing, and out-of-root class checks passed." ).toConsole();
+	}
+
+	/**
+	 * Builds a struct describing one Log4j 2 plugin entry.
+	 */
+	private struct function log4jPlugin( required string className, required string name ) {
+		return { "className" : arguments.className, "name" : arguments.name };
+	}
+
+	/**
+	 * Builds a dependency JAR that ships a Log4j 2 plugin cache written in the
+	 * same binary format Log4j's PluginCache produces.
+	 */
+	private function createLog4jPluginCacheJar(
+		required string directory,
+		required string jarFile,
+		required struct categories
+	) {
+		if( directoryExists( arguments.directory ) ) {
+			directoryDelete( arguments.directory, true );
+		}
+		if( fileExists( arguments.jarFile ) ) {
+			fileDelete( arguments.jarFile );
+		}
+
+		var cacheDirectory = arguments.directory & "/META-INF/org/apache/logging/log4j/core/config/plugins";
+		directoryCreate( cacheDirectory, true );
+		writeBinaryFile( cacheDirectory & "/Log4j2Plugins.dat", buildLog4jPluginCacheBytes( arguments.categories ) );
+		// A unique marker so the fixture JAR is not cache-only and never collides with another fixture
+		fileWrite( arguments.directory & "/" & getFileFromPath( arguments.jarFile ) & ".txt", "placeholder" );
+
+		zipJar( arguments.directory, arguments.jarFile );
+	}
+
+	/**
+	 * Builds a dependency JAR whose Log4j 2 plugin cache cannot be parsed.
+	 */
+	private function createCorruptLog4jPluginCacheJar( required string directory, required string jarFile ) {
+		if( directoryExists( arguments.directory ) ) {
+			directoryDelete( arguments.directory, true );
+		}
+		if( fileExists( arguments.jarFile ) ) {
+			fileDelete( arguments.jarFile );
+		}
+
+		var cacheDirectory = arguments.directory & "/META-INF/org/apache/logging/log4j/core/config/plugins";
+		directoryCreate( cacheDirectory, true );
+		// A negative category count is never valid and fails fast when parsed
+		var byteStream = createObject( "java", "java.io.ByteArrayOutputStream" ).init();
+		var dataStream = createObject( "java", "java.io.DataOutputStream" ).init( byteStream );
+		try {
+			dataStream.writeInt( -1 );
+			dataStream.flush();
+		} finally {
+			dataStream.close();
+		}
+		writeBinaryFile( cacheDirectory & "/Log4j2Plugins.dat", byteStream.toByteArray() );
+
+		zipJar( arguments.directory, arguments.jarFile );
+	}
+
+	/**
+	 * Serializes plugin categories into the Log4j 2 plugin cache binary format.
+	 */
+	private binary function buildLog4jPluginCacheBytes( required struct categories ) {
+		var byteStream = createObject( "java", "java.io.ByteArrayOutputStream" ).init();
+		var dataStream = createObject( "java", "java.io.DataOutputStream" ).init( byteStream );
+		try {
+			dataStream.writeInt( structCount( arguments.categories ) );
+			for( var categoryName in arguments.categories ) {
+				var plugins = arguments.categories[ categoryName ];
+				dataStream.writeUTF( categoryName );
+				dataStream.writeInt( structCount( plugins ) );
+				for( var pluginKey in plugins ) {
+					var plugin = plugins[ pluginKey ];
+					dataStream.writeUTF( pluginKey );
+					dataStream.writeUTF( plugin.className );
+					dataStream.writeUTF( plugin.name );
+					dataStream.writeBoolean( plugin.printable ?: true );
+					dataStream.writeBoolean( plugin.defer ?: false );
+				}
+			}
+			dataStream.flush();
+			return byteStream.toByteArray();
+		} finally {
+			dataStream.close();
+		}
+	}
+
+	/**
+	 * Writes raw bytes to a file without any charset translation.
+	 */
+	private function writeBinaryFile( required string filePath, required any contentBytes ) {
+		var outputStream = createObject( "java", "java.io.FileOutputStream" ).init( arguments.filePath );
+		try {
+			outputStream.write( arguments.contentBytes );
+		} finally {
+			outputStream.close();
+		}
+	}
+
+	/**
+	 * Zips the contents of a directory into a JAR file using CommandBox's zip.
+	 */
+	private function zipJar( required string directory, required string jarFile ) {
+		var zipFile = arguments.jarFile & ".zip";
+		if( fileExists( zipFile ) ) {
+			fileDelete( zipFile );
+		}
+		zip action="zip" file="#arguments.jarFile#" source="#arguments.directory#" overwrite="true";
+		fileMove( zipFile, arguments.jarFile );
+	}
+
+	/**
+	 * Returns an archive entry's content encoded as base64 so two entries can be
+	 * compared byte for byte.
+	 */
+	private string function readJarEntryBase64( required string jarFile, required string entryName ) {
+		var jar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarFile );
+		try {
+			var entry = jar.getJarEntry( arguments.entryName );
+			if( isNull( entry ) ) {
+				error( "Expected JAR entry was not found: #arguments.entryName#" );
+			}
+			var input = jar.getInputStream( entry );
+			try {
+				return binaryEncode( input.readAllBytes(), "base64" );
+			} finally {
+				input.close();
+			}
+		} finally {
+			jar.close();
+		}
+	}
+
+	/**
+	 * Counts how many times an entry name appears in an archive (1 or 0 for a
+	 * well-formed JAR, but this proves only one copy of the cache is written).
+	 */
+	private numeric function countJarEntries( required string jarFile, required string entryName ) {
+		var jar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarFile );
+		var count = 0;
+		try {
+			var entries = jar.entries();
+			while( entries.hasMoreElements() ) {
+				if( entries.nextElement().getName() == arguments.entryName ) {
+					count++;
+				}
+			}
+		} finally {
+			jar.close();
+		}
+		return count;
+	}
+
+	/**
+	 * Parses a Log4j 2 plugin cache entry into a flat `<category>:<key>` map of
+	 * class names.
+	 */
+	private struct function readLog4jPluginCacheEntries( required string jarFile ) {
+		var cacheEntryName = "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat";
+		var jar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarFile );
+		var entries = {};
+		try {
+			var entry = jar.getJarEntry( cacheEntryName );
+			if( isNull( entry ) ) {
+				return entries;
+			}
+			var input = jar.getInputStream( entry );
+			var cacheBytes = input.readAllBytes();
+			input.close();
+			var stream = createObject( "java", "java.io.DataInputStream" ).init(
+				createObject( "java", "java.io.ByteArrayInputStream" ).init( cacheBytes )
+			);
+			try {
+				var categoryCount = stream.readInt();
+				for( var categoryNumber = 0; categoryNumber < categoryCount; categoryNumber++ ) {
+					var categoryName = stream.readUTF();
+					var pluginCount = stream.readInt();
+					for( var pluginNumber = 0; pluginNumber < pluginCount; pluginNumber++ ) {
+						var pluginKey = stream.readUTF();
+						var className = stream.readUTF();
+						stream.readUTF();
+						stream.readBoolean();
+						stream.readBoolean();
+						entries[ categoryName & ":" & pluginKey ] = className;
+					}
+				}
+			} finally {
+				stream.close();
+			}
+		} finally {
+			jar.close();
+		}
+		return entries;
 	}
 
 	private function assertFileExists( required string filePath ) {

@@ -60,7 +60,8 @@ component extends="commandbox.system.BaseCommand" {
 			"fatJarOptions"  : {
 				"mergeServiceDescriptors" : true,
 				"excludeSignatures"       : true,
-				"duplicatePolicy"         : "last"
+				"duplicatePolicy"         : "last",
+				"mergeLog4jPluginCaches"  : false
 			},
 			"manifest"       : {},
 			"runArgs"        : [],

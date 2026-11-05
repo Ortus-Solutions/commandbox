@@ -127,9 +127,7 @@ component accessors="true" singleton {
 			'trayicon' : d.trayicon ?: '',
 			// Duplicate so onServerStart interceptors don't actually change config settings via reference.
 			'trayOptions' : duplicate( d.trayOptions ?: [] ),
-			// Only default this on for Windows-- off for Linux and Mac due to crap unfixed bugs in the
-			// upstream Java library. https://github.com/dorkbox/SystemTray/issues/119
-			'trayEnable' : d.trayEnable ?: fileSystemUtil.isWindows(),
+			'trayEnable' : d.trayEnable ?: true,
 			'dockEnable' : d.dockEnable ?: true,
 			'profile'	: d.profile ?: '',
 			'jvm' : {
@@ -1823,7 +1821,7 @@ component accessors="true" singleton {
 		if( serverInfo.isJakartaEE ) {
 			consoleLogger.warn( "Runwar 6.x with Jakarta support is required for #serverInfo.engineName#@#serverInfo.engineVersion#." );
 			// Ensure Runwar 6.x with Jakarta support
-			var runwarJakartaVersion = '6.1.7';
+			var runwarJakartaVersion = '6.2.0-SNAPSHOT';
 			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
 			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
 			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );

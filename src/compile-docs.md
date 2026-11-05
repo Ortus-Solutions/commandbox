@@ -625,7 +625,9 @@ compile()
 		// Remove dependency signature files from the merged archive.
 		"excludeSignatures" : true,
 		// Choose which duplicate regular entry wins.
-		"duplicatePolicy" : "last"
+		"duplicatePolicy" : "last",
+		// Union the Log4j 2 plugin caches into one file.
+		"mergeLog4jPluginCaches" : false
 	} )
 	.toFatJar( "example-all.jar", [ "libs/dependency-one.jar", "libs/dependency-two.jar" ] )
 	.run();
@@ -644,6 +646,49 @@ project's own resources. Dependency signature files are excluded when
 `excludeSignatures` is enabled. A dependency's `META-INF/MANIFEST.MF` and
 `META-INF/INDEX.LIST` are never copied, because neither describes the merged
 archive.
+
+### Log4j 2 plugin caches
+
+Every Log4j 2 plugin JAR ships a plugin cache at the same archive path:
+
+```
+META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat
+```
+
+A flat merge can only keep one file at that path, so every plugin declared by
+the other JARs disappears at runtime. The failure is not visible at build time;
+it shows up as errors such as `Unable to locate plugin type for Loggers` or a
+`NullPointerException` when an appender is added.
+
+Set `mergeLog4jPluginCaches` to `true` to combine them instead:
+
+```js
+compile()
+	.configureFatJar( { "mergeLog4jPluginCaches" : true } )
+	.toFatJar( "example-all.jar", [ "log4j-core.jar", "log4j-layout-template-json.jar" ] )
+	.run();
+```
+
+```bash
+java compile --fatJar fatJarName=example-all.jar fatJarJars=log4j-core.jar,log4j-layout-template-json.jar fatJarOptions:mergeLog4jPluginCaches=true
+```
+
+When enabled:
+
+- Every cache found in the inputs — the project JAR, the dependencies, and the
+  project resources — is collected.
+- The caches are merged into a single cache containing the union of all
+  categories and plugin declarations, and that one file is written to the output
+  JAR. The merge is a category-and-plugin union, not a byte concatenation, so
+  the `.dat` format stays valid.
+- The merge is independent of `duplicatePolicy` and of the order the inputs are
+  supplied in, so the result is deterministic.
+- No caches present: nothing is written and the build succeeds.
+- Exactly one cache present: it is copied through byte for byte.
+- An unreadable cache fails the build with an error naming the offending JAR.
+
+`mergeLog4jPluginCaches` defaults to `false`, which keeps the previous behavior
+of writing whichever cache the duplicate policy selects.
 
 Duplicate entries resolved by `duplicatePolicy` are reported with their source
 JARs in verbose output, and are available as a list of structs from

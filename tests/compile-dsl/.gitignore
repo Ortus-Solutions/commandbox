@@ -13,6 +13,8 @@
 /fat-jar-lone/
 /fat-jar-dir/
 /fat-jar-default/
+/fat-jar-log4j/
+/scratch/
 /resources-fixture/
 /package-fixture/build/
 /package-fixture/classes/

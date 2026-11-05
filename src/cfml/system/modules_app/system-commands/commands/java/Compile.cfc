@@ -15,6 +15,13 @@
  * Complex options use the name:key=value syntax. Repeated entries are merged
  * into a struct. Comma-delimited values are converted to arrays for options that
  * accept lists.
+ *
+ * Fat JAR options accept mergeServiceDescriptors, excludeSignatures,
+ * duplicatePolicy (last, first, or error), and mergeLog4jPluginCaches.
+ * mergeLog4jPluginCaches merges the Log4j 2 plugin cache that every Log4j
+ * plugin JAR ships at
+ * META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat
+ * into a single file so no plugin set is lost at runtime.
  **/
 component extends="commandbox.system.BaseCommand" {
 
@@ -47,7 +54,7 @@ component extends="commandbox.system.BaseCommand" {
 	 * @fatJarJars Dependency JARs or directories for a fat JAR
 	 * @fatJarJars.optionsFileComplete true
 	 * @fatJarJars.optionsDirectoryComplete true
-	 * @fatJarOptions Fat JAR options supplied as fatJarOptions:Name=value
+ * @fatJarOptions Fat JAR options supplied as fatJarOptions:Name=value
 	 * @javaDocs Generate Javadocs. Omitted, box.json (or the default) is used; false disables it.
 	 * @verbose Show verbose compiler and JAR output. Omitted, box.json (or the default) is used; false disables it.
 	 * @JSON Return the compile result without the text overview

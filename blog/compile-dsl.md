@@ -249,7 +249,7 @@ java -jar build/libs/app-all.jar
 Hello from your fat JAR!
 ```
 
-Tune the merge behavior — service-descriptor merging, signature exclusion, and the duplicate-entry policy (`last`, `first`, or `error`) — with `configureFatJar()` in the DSL or `fatJarOptions:` flags on the command line.
+Tune the merge behavior — service-descriptor merging, signature exclusion, Log4j 2 plugin cache merging, and the duplicate-entry policy (`last`, `first`, or `error`) — with `configureFatJar()` in the DSL or `fatJarOptions:` flags on the command line.
 
 ## Everything You Need, Returned To You
 

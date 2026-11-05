@@ -293,6 +293,10 @@ component {
 			runCompile( { fatJarName="fat-jar-policy-error.jar", fatJarJars="libs/fat-jar-policy-first.jar,libs/fat-jar-policy-second.jar", fatJarOptions={ "duplicatePolicy"="error" } }, [ "fatJar", "JSON" ] );
 		} catch( any e ) { duplicateFailed = true; }
 		assertEquals( true, duplicateFailed );
+		// The expected failure left the interactive job and the exit code set, so clear
+		// them before the runner prints the result and moves on to the next test.
+		job.reset();
+		setExitCode( 0 );
 	}
 
 	/** @test */
@@ -306,6 +310,9 @@ component {
 		} catch( any e ) { compileFailed = true; }
 		assertEquals( true, compileFailed );
 		assertEquals( beforeTempFiles.sort( "textnocase" ).toList( chr(10) ), directoryList( tempDirectory, false, "array", "temp*.txt" ).sort( "textnocase" ).toList( chr(10) ) );
+		// The expected failure left the interactive job and the exit code set.
+		job.reset();
+		setExitCode( 0 );
 	}
 
 	/** @test */
