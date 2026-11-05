@@ -1025,7 +1025,12 @@ class {
 	 * Also builds the Debian package, stages the BE repositories, and stages stable
 	 * repositories only when the package version is stable. Repository updates remain local.
 	 */
-	function buildInstallers() depends="cleanBuildDist" {
+	function buildInstallers() {
+		// Always start from an empty distribution directory. Without this, artifacts from an
+		// earlier build or an older version stay in build/dist and syncDistToS3 republishes them
+		// under this version's release path.
+		cleanBuildDist();
+
 		// box.jar
 		buildCliJarBundled();
 		// *unix box
@@ -1070,6 +1075,11 @@ class {
 		var moduleRoot = resolvePath( "build/temp/s3sdk-task" );
 		// API docs are uploaded to the apidocs bucket by the syncApiDocsToS3 task.
 		var apidocsDistPath = resolvePath( "build/dist/apidocs" );
+		// Only release artifacts may be published. Files sitting directly in build/dist are always
+		// release artifacts, but a directory must be one of the known repository folders. A stray
+		// staging folder (for example a `jre/` runtime tree unzipped into build/dist while testing
+		// the bundled-runtime layout) must never be uploaded into the release path.
+		var publishableDirectories = [ "RPMS", "RPMS-be", "debs", "debs-be" ];
 
 		if( !len( accessKey ) || !len( accessSecret ) ) {
 			print.line( "Skipping S3 sync: AWS_ACCESS_KEY and AWS_ACCESS_SECRET are not configured." ).toConsole();
@@ -1078,6 +1088,23 @@ class {
 		if( !directoryExists( distPath ) ) {
 			throw( message="The distribution directory does not exist.", detail=distPath, type="commandException" );
 		}
+		var skippedDirectories = directoryList(
+			path=distPath,
+			recurse=false,
+			listInfo="path",
+			filter=function( path ) {
+				return directoryExists( path )
+					&& !arrayFindNoCase( publishableDirectories, getFileFromPath( path ) )
+					&& left( path, len( apidocsDistPath ) ) != apidocsDistPath;
+			}
+		);
+
+		for( var skippedDirectory in skippedDirectories ) {
+			print.yellowLine(
+				"Skipping non-release directory in build/dist: #getFileFromPath( skippedDirectory )#"
+			).toConsole();
+		}
+
 		installS3SDKModule( moduleRoot );
 		var s3 = new s3sdk.models.AmazonS3(
 			accessKey=accessKey,
@@ -1091,9 +1118,29 @@ class {
 			recurse=true,
 			listInfo="path",
 			filter=function( path ) {
-				return fileExists( path ) && left( path, len( apidocsDistPath ) ) != apidocsDistPath;
+				return fileExists( path )
+					&& left( path, len( apidocsDistPath ) ) != apidocsDistPath
+					&& isPublishableDistributionArtifact( path, distPath, publishableDirectories );
 			}
 		);
+
+		// Never publish another release's artifacts. When build/dist was not cleared (a targeted
+		// build or sync instead of buildInstallers) the previous version's files are still sitting
+		// here and would be republished under this version's release path.
+		var staleArtifacts = artifactFiles.filter( function( artifactPath ) {
+			return !artifactFileNameMatchesVersion( getFileFromPath( artifactPath ), version );
+		} );
+		if( staleArtifacts.len() ) {
+			var staleNames = [];
+			for( var staleArtifact in staleArtifacts ) {
+				staleNames.append( getFileFromPath( staleArtifact ) );
+			}
+			throw(
+				message="Refusing to publish artifacts from another version.",
+				detail="build/dist should only contain #version# artifacts but also has: #arrayToList( staleNames, ", " )#. Run cleanBuildDist() and rebuild before syncing.",
+				type="commandException"
+			);
+		}
 
 		artifactFiles.each( function( filePath ) {
 			var relativePath = replaceNoCase( filePath, distPath, "", "one" );
@@ -1253,6 +1300,60 @@ class {
 		var normalizedPath = replace( arguments.relativePath, "\", "/", "all" );
 		var firstPathPart = lCase( listFirst( normalizedPath, "/" ) );
 		return listFindNoCase( "RPMS,RPMS-be,debs,debs-be", firstPathPart ) > 0;
+	}
+
+	/**
+	 * Determines whether a path inside build/dist may be published to the downloads bucket.
+	 *
+	 * Files sitting directly in build/dist are release artifacts and always publish. A directory
+	 * only publishes when it is one of the known repository folders, which keeps stray staging
+	 * folders out of the release path on S3.
+	 *
+	 * @artifactPath The absolute path of the file being considered.
+	 * @distPath The absolute path of the build/dist directory.
+	 * @allowedDirectories The top-level directories in build/dist that may be published.
+	 */
+	private boolean function isPublishableDistributionArtifact(
+		required string artifactPath,
+		required string distPath,
+		required array allowedDirectories
+	) {
+		var relativePath = replaceNoCase( arguments.artifactPath, arguments.distPath, "", "one" );
+		relativePath = reReplace( relativePath, "^[/\\\\]+", "", "all" );
+		relativePath = replace( relativePath, "\", "/", "all" );
+		var pathParts = listToArray( relativePath, "/" );
+
+		// A file directly in build/dist is a release artifact.
+		if( pathParts.len() == 1 ) {
+			return true;
+		}
+		return arrayFindNoCase( arguments.allowedDirectories, pathParts[ 1 ] ) > 0;
+	}
+
+	/**
+	 * Determines whether an artifact filename belongs to the release being published.
+	 *
+	 * A filename that embeds a version must use the version being published, or its
+	 * major.minor.patch prefix (the RPM drops the pre-release identifier). Filenames without a
+	 * version (box, box.exe, box.jar, checksum sidecars, repository metadata) always match.
+	 *
+	 * @fileName The artifact filename to inspect.
+	 * @version The version being published.
+	 */
+	private boolean function artifactFileNameMatchesVersion( required string fileName, required string version ) {
+		var versionTokens = reMatch( "[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?", arguments.fileName );
+		if( !versionTokens.len() ) {
+			return true;
+		}
+		var numericVersion = reReplace( arguments.version, "^([0-9]+\.[0-9]+\.[0-9]+).*$", "\1" );
+		for( var versionToken in versionTokens ) {
+			if( versionToken == arguments.version
+				|| versionToken == numericVersion
+				|| versionToken.startsWith( arguments.version ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function buildApiDocs() {

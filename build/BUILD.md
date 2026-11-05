@@ -386,6 +386,24 @@ ant -f build/build.xml build.cli.all
 - RPM repository metadata
 - Maven repository for programmatic access
 
+### Distribution Publishing
+
+`syncDistToS3` publishes only release artifacts:
+
+- Files sitting directly in `build/dist` are uploaded below `ortussolutions/commandbox/{version}/`.
+- Only the `RPMS`, `RPMS-be`, `debs`, and `debs-be` directories are published. They stay at the
+  bucket root so repository URLs remain stable.
+- `build/dist/apidocs` is skipped because `syncApiDocsToS3` publishes it to the apidocs bucket.
+
+Every other directory in `build/dist` is reported as a skipped non-release directory and is never
+uploaded. In particular, do not unpack a `commandbox-jre-*` bundle into `build/dist` to test the
+bundled-runtime layout: it leaves a loose `jre/` tree at the root of the distribution directory.
+
+`buildInstallers` empties `build/dist` before it builds anything, so a full release build can never
+publish leftovers. If a targeted build or a standalone `syncDistToS3` leaves artifacts from a
+different version in `build/dist`, the sync refuses to run and lists the offending files. Clear the
+directory with `cleanBuildDist` and rebuild before syncing.
+
 ## Customization Points
 
 ### Version Management
