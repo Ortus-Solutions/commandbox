@@ -53,6 +53,7 @@
     "maven":{
 		"installMode":"",
 		"installDirectory":"",
+		"devInstallDirectory":"",
         "repositories":{
 
         }
@@ -61,17 +62,21 @@
 
     },
     "java":{
-        "source":"src/main/java",
-        "classes":"build/classes/java/main",
-        "libsDir":"build/libs",
-        "resources":"src/main/resources",
-        "javaDocsDir":"build/docs/javadoc",
+        "sourcePath":"src/main/java",
+        "testSourcePath":"src/test/java",
+        "classesDirectory":"build/classes/java/main",
+        "testClassesDirectory":"build/classes/java/test",
+        "resourcesDirectory":"src/main/resources",
+        "testResourcesDirectory":"src/test/resources",
+        "libsDirectory":"build/libs",
+        "javaDocsDirectory":"build/docs/javadoc",
         "classPath":[],
+        "testClassPath":[],
         "jar":false,
-        "jarName":"",
+        "jarFile":"",
         "fatJar":false,
-        "fatJarName":"",
-        "fatJarJars":[],
+        "fatJarFile":"",
+        "fatJarPaths":[],
         "compileOptions":{
 
         },

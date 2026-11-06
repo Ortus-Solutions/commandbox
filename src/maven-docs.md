@@ -282,6 +282,40 @@ Project `maven.installDirectory` takes precedence over `endpoints.maven.installD
 neither setting is present, Maven leaves the directory unset and lets the normal JAR convention
 apply: shared installs use the caller's directory, while dedicated installs use `lib/`.
 
+### Dev dependency installs
+
+`devDependencies` install into their own directory so a test-only JAR can never be mistaken for a
+runtime one and be swept into a `fatJar`:
+
+| Setting | Default |
+| --- | --- |
+| `maven.installDirectory` | `dist/dependencies` (the `java.classPath` convention) |
+| `maven.devInstallDirectory` | `dist/test-dependencies` (the `java.testClassPath` convention) |
+
+```json
+{
+  "maven": {
+    "installDirectory": "libs",
+    "devInstallDirectory": "libs-test"
+  }
+}
+```
+
+`maven.devInstallDirectory` overrides the destination for `devDependencies` only; `dependencies`
+keep using `maven.installDirectory`. Configure the global default with:
+
+```bash
+config set endpoints.maven.devInstallDirectory=libs-test
+```
+
+Precedence matches the runtime install directory, and an explicit `installPaths` entry for a
+package still wins over both, so single-package overrides keep working. Note that `installPaths` is
+only safe when it points at a directory that package owns alone: pointing it at a shared directory
+is what let a package uninstall delete every sibling dependency.
+
+`install --production` skips `devDependencies` entirely, so no dev directory is created.
+`uninstall` resolves a dev dependency from the dev install directory rather than the runtime one.
+
 Shared mode still creates temporary package metadata, so Maven transitives can be resolved and
 installed through the normal CommandBox dependency flow. The generated `box.json` is not copied
 to the shared destination, and transitive dependencies are not persisted into that destination's

@@ -28,3 +28,6 @@
 /compile-scripts-fixture/build/
 /compile-scripts-fixture/dist/
 /compile-scripts-fixture/*.marker
+/java-test-fixture/dist/
+/java-test-fixture/build/
+/java-test-norunner-fixture/dist/

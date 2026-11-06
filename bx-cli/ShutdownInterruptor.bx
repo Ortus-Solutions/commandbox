@@ -20,13 +20,37 @@ class {
 	function run() {
 		try {
 			variables.mainThread.interrupt();
+			out = createObject( "java", "java.lang.System" ).out;
 
-			// The JVM halts as soon as every shutdown hook returns, so wait for the main
-			// thread to finish its cleanup (i.e. stop the server) or it never gets to run.
-			variables.mainThread.join( javacast( "long", 10000 ) );
+			// If main is already parked in the JVM's shutdown-hook sequence waiting on this hook,
+			// it can never finish while we run, so waiting on it just burns the whole grace
+			// period.  Bail out immediately in that case.
+			if( mainIsJoiningShutdownHooks() ) {
+				return;
+			}
+
+			// Give main a short grace period to finish its own cleanup (i.e. stop the server)
+			// before the JVM halts, sleeping between checks so we don't spin the CPU.
+			var threadClass = createObject( "java", "java.lang.Thread" );
+			var i = 0;
+			while( variables.mainThread.isAlive() && ++i <= 100 ) {
+				threadClass.sleep( javacast( "long", 100 ) );
+			}
 		} catch( any e ) {
 			// Nothing useful to do while the JVM is going away
 		}
+	}
+
+	/**
+	 * Is the main thread parked in ApplicationShutdownHooks.runHooks() waiting on this hook?
+	 */
+	private boolean function mainIsJoiningShutdownHooks() {
+		for( var frame in variables.mainThread.getStackTrace() ) {
+			if( frame.getClassName() contains "ApplicationShutdownHooks" ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

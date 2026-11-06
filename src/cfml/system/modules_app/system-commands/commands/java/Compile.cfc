@@ -3,9 +3,10 @@
  *
  * {code:bash}
  * java compile
- * java compile source=src/main/java jar=example.jar
+ * java compile sourcePath=src/main/java jarFile=example.jar
  * java compile compileOptions:release=8 jarOptions:mainClass=example.App
  * java compile manifest:Main-Class=example.App --JSON
+ * java compile --tests
  * {code}
  *
  * Compilation uses any available JDK unless a release, source, or target
@@ -26,19 +27,14 @@
 component extends="commandbox.system.BaseCommand" {
 
 	/**
-	 * @projectRoot Project directory used as the path-resolution root
-	 * @projectRoot.optionsDirectoryComplete true
-	 * @source Java source directory, file, glob, or comma-delimited list
-	 * @source.optionsFileComplete true
-	 * @source.optionsDirectoryComplete true
-	 * @classes Compiled class output directory
-	 * @classes.optionsDirectoryComplete true
-	 * @libsDir JAR output directory
-	 * @libsDir.optionsDirectoryComplete true
-	 * @resources Resource directory or directories to include in a JAR
-	 * @resources.optionsDirectoryComplete true
-	 * @javaDocsDir Javadoc output directory
-	 * @javaDocsDir.optionsDirectoryComplete true
+	 * @projectRootDirectory Project directory used as the path-resolution root
+	 * @sourcePath Java source directory, file, glob, or comma-delimited list
+	 * @sourcePath.optionsFileComplete true
+	 * @sourcePath.optionsDirectoryComplete true
+	 * @classesDirectory Compiled class output directory
+	 * @libsDirectory JAR output directory
+	 * @resourcesDirectory Resource directory or directories to include in a JAR
+	 * @javaDocsDirectory Javadoc output directory
 	 * @manifest Manifest entries supplied as manifest:Name=value
 	 * @compileOptions Javac options supplied as compileOptions:Name=value
 	 * @jarOptions Jar options supplied as jarOptions:Name=value
@@ -46,49 +42,54 @@ component extends="commandbox.system.BaseCommand" {
 	 * @classPath.optionsFileComplete true
 	 * @classPath.optionsDirectoryComplete true
 	 * @jar Create a JAR. Omitted, box.json (or the default) is used; false disables it.
-	 * @jarName JAR filename
-	 * @jarName.optionsFileComplete true
+	 * @jarFile JAR filename
 	 * @fatJar Create a fat JAR. Omitted, box.json (or the default) is used; false disables it.
-	 * @fatJarName Fat JAR filename
-	 * @fatJarName.optionsFileComplete true
-	 * @fatJarJars Dependency JARs or directories for a fat JAR
-	 * @fatJarJars.optionsFileComplete true
-	 * @fatJarJars.optionsDirectoryComplete true
- * @fatJarOptions Fat JAR options supplied as fatJarOptions:Name=value
+	 * @fatJarFile Fat JAR filename
+	 * @fatJarPaths Dependency JARs or directories for a fat JAR
+	 * @fatJarPaths.optionsFileComplete true
+	 * @fatJarPaths.optionsDirectoryComplete true
+	 * @fatJarOptions Fat JAR options supplied as fatJarOptions:Name=value
 	 * @javaDocs Generate Javadocs. Omitted, box.json (or the default) is used; false disables it.
+	 * @tests Also compile the test source set. Main sources are always compiled.
+	 * @clean Remove generated output first, then compile
 	 * @verbose Show verbose compiler and JAR output. Omitted, box.json (or the default) is used; false disables it.
 	 * @JSON Return the compile result without the text overview
 	 */
 	function run(
-		string projectRoot="",
-		string source="",
-		string classes="",
-		string libsDir="",
-			any resources="",
-		string javaDocsDir="",
+		string projectRootDirectory="",
+		string sourcePath="",
+		string classesDirectory="",
+		string libsDirectory="",
+		any resourcesDirectory="",
+		string javaDocsDirectory="",
 		struct manifest={},
 		struct compileOptions={},
 		struct jarOptions={},
 		string classPath="",
 		boolean jar,
-		string jarName="",
+		string jarFile="",
 		boolean fatJar,
-		string fatJarName="",
-		string fatJarJars="",
+		string fatJarFile="",
+		string fatJarPaths="",
 		struct fatJarOptions={},
 		boolean javaDocs,
+		boolean tests=false,
+		boolean clean=false,
 		boolean verbose,
 		boolean JSON=false
 	) {
-		var dsl = compile( arguments.projectRoot );
-		if( !isNull( arguments.source ) && len( arguments.source & "" ) ) dsl.fromSource( arguments.source );
-		if( len( arguments.classes ) ) dsl.toClasses( arguments.classes );
-		if( len( arguments.libsDir ) ) dsl.libsDir( arguments.libsDir );
-		if( isArray( arguments.resources ) ? arguments.resources.len() : len( arguments.resources ) ) {
-			dsl.withResources( arguments.resources );
+		var dsl = compile( arguments.projectRootDirectory );
+		if( arguments.clean ) {
+			dsl.clean();
 		}
-		if( len( arguments.javaDocsDir ) ) dsl.setJavaDocDestinationDir( arguments.javaDocsDir );
-		if( !isNull( arguments.classPath ) && len( arguments.classPath & "" ) ) dsl.withClassPath( arguments.classPath );
+		if( len( arguments.sourcePath ) ) dsl.fromSource( arguments.sourcePath );
+		if( len( arguments.classesDirectory ) ) dsl.toClasses( arguments.classesDirectory );
+		if( len( arguments.libsDirectory ) ) dsl.libsDir( arguments.libsDirectory );
+		if( isArray( arguments.resourcesDirectory ) ? arguments.resourcesDirectory.len() : len( arguments.resourcesDirectory ) ) {
+			dsl.withResources( arguments.resourcesDirectory );
+		}
+		if( len( arguments.javaDocsDirectory ) ) dsl.setJavaDocDestinationDir( arguments.javaDocsDirectory );
+		if( len( arguments.classPath ) ) dsl.withClassPath( arguments.classPath );
 		if( structCount( arguments.compileOptions ) ) dsl.compileOptions( normalizeOptions( arguments.compileOptions ) );
 		if( structCount( arguments.jarOptions ) ) dsl.jarOptions( normalizeOptions( arguments.jarOptions ) );
 		if( structCount( arguments.manifest ) ) dsl.manifest( arguments.manifest );
@@ -98,25 +99,26 @@ component extends="commandbox.system.BaseCommand" {
 		// project's box.json while still being overridable at the shell.
 		if( !isNull( arguments.javaDocs ) ) dsl.setUseJavaDoc( arguments.javaDocs );
 		if( !isNull( arguments.verbose ) ) dsl.setVerbose( arguments.verbose );
+		if( arguments.tests ) dsl.setCompileTests( true );
 
 		if( !isNull( arguments.jar ) ) {
 			if( arguments.jar ) {
-				dsl.toJar( arguments.jarName );
+				dsl.toJar( arguments.jarFile );
 			} else {
 				dsl.setCreateJar( false );
 			}
-		} else if( len( arguments.jarName ) ) {
-			dsl.toJar( arguments.jarName );
+		} else if( len( arguments.jarFile ) ) {
+			dsl.toJar( arguments.jarFile );
 		}
 
 		if( !isNull( arguments.fatJar ) ) {
 			if( arguments.fatJar ) {
-				dsl.toFatJar( arguments.fatJarName, arguments.fatJarJars, arguments.fatJarOptions );
+				dsl.toFatJar( arguments.fatJarFile, arguments.fatJarPaths, arguments.fatJarOptions );
 			} else {
 				dsl.setFatJarPaths( [] );
 			}
-		} else if( len( arguments.fatJarName ) ) {
-			dsl.toFatJar( arguments.fatJarName, arguments.fatJarJars, arguments.fatJarOptions );
+		} else if( len( arguments.fatJarFile ) ) {
+			dsl.toFatJar( arguments.fatJarFile, arguments.fatJarPaths, arguments.fatJarOptions );
 		}
 
 		var result = dsl.run();
@@ -128,6 +130,12 @@ component extends="commandbox.system.BaseCommand" {
 		printOverview( result );
 	}
 
+	/**
+	 * Converts comma-delimited values to arrays for the compiler options that accept lists.
+	 *
+	 * @options The options as supplied on the command line.
+	 * @returns The normalized options.
+	 */
 	private struct function normalizeOptions( required struct options ) {
 		var normalized = {};
 		var listKeys = [
@@ -144,10 +152,19 @@ component extends="commandbox.system.BaseCommand" {
 		return normalized;
 	}
 
+	/**
+	 * Prints the human-readable summary of a compile run.
+	 *
+	 * @result The result struct returned by the Compile DSL.
+	 * @returns Nothing.
+	 */
 	private void function printOverview( required struct result ) {
 		print.greenLine( "Java compilation completed." );
 		print.line( "Project root: #result.projectRoot#" );
 		print.line( "Classes: #result.classOutputDirectory#" );
+		if( result.testsCompiled ?: false ) {
+			print.line( "Test classes: #result.testClassOutputDirectory#" );
+		}
 		if( len( result.jarPath ) ) print.line( "JAR: #result.jarPath#" );
 		if( len( result.javaDocsPath ) ) print.line( "Javadocs: #result.javaDocsPath#" );
 		if( ( result.fatJarDependencyCount ?: 0 ) > 0 ) {

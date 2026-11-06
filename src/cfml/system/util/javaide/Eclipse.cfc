@@ -11,15 +11,33 @@
 */
 component extends="BaseEmitter" {
 
+	/**
+	 * Detects whether this project already uses Eclipse.
+	 *
+	 * @root The project root.
+	 * @returns True when Eclipse metadata is present.
+	 */
 	boolean function detect( required string root ) {
 		return fileExists( arguments.root & "/.project" ) || fileExists( arguments.root & "/.classpath" )
 			|| directoryExists( arguments.root & "/.settings" );
 	}
 
+	/**
+	 * Describes the Eclipse files to write from the project model.
+	 *
+	 * @model The editor-neutral project model.
+	 * @returns The file specifications.
+	 */
 	array function files( required struct model ) {
 		var entries = [];
 		var roots = duplicate( arguments.model.sourceRoots );
+		for( var root in arguments.model.testSourceRoots ) {
+			if( !roots.find( root ) ) roots.append( root );
+		}
 		for( var root in arguments.model.resourceRoots ) {
+			if( directoryExists( root ) && !roots.find( root ) ) roots.append( root );
+		}
+		for( var root in arguments.model.testResourceRoots ) {
 			if( directoryExists( root ) && !roots.find( root ) ) roots.append( root );
 		}
 		for( var root in roots ) {
@@ -29,7 +47,9 @@ component extends="BaseEmitter" {
 				[ '<classpathentry kind="src" path="#escape( path )#"/>' ], "/classpath"
 			) );
 		}
-		for( var classPathEntry in arguments.model.classPath ) {
+		var classPathEntries = duplicate( arguments.model.classPath );
+		classPathEntries.append( arguments.model.testClassPath, true );
+		for( var classPathEntry in classPathEntries ) {
 			var base = relative( classPathEntry.path, arguments.model );
 			var jars = [];
 			for( var jar in classPathEntry.resolved ) {

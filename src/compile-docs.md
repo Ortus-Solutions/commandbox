@@ -1,4 +1,4 @@
-﻿# Compile DSL
+# Compile DSL
 
 The DSL is also available through the `java compile` command. The command
 returns the same result metadata as the DSL and prints a short operation
@@ -6,7 +6,7 @@ summary. Use `--JSON` to print and return the result struct without the
 summary.
 
 ```bash
-java compile --jar jarName=example.jar source=src/main/java
+java compile --jar jarFile=example.jar sourcePath=src/main/java
 java compile compileOptions:release=8 compileOptions:debug=lines,source
 java compile jarOptions:mainClass=example.App manifest:Main-Class=example.App
 java compile --JSON
@@ -28,10 +28,26 @@ this resolves from the directory containing `Task.cfc`.
 | Setting | Default |
 | --- | --- |
 | Java sources | `src/main/java` |
+| Test sources | `src/test/java` |
 | Compiled classes | `build/classes/java/main` |
+| Compiled test classes | `build/classes/java/test` |
 | JAR directory | `build/libs` |
 | Resources | `src/main/resources` |
+| Test resources | `src/test/resources` |
 | Javadocs | `build/docs/javadoc` |
+| Runtime classpath | `dist/dependencies` |
+| Test classpath | `dist/test-dependencies` |
+
+`testSourcePath` and `testClassesDirectory` are derived from their main
+counterparts when they are not set explicitly: the `main` path segment is
+swapped for `test`, the same swap Gradle and Maven use. A flat layout such as
+`sourcePath=src` has no `main` segment to swap, so the default
+(`src/test/java`, `build/classes/java/test`) applies and the project overrides
+`testSourcePath`/`testClassesDirectory` instead.
+
+The runtime and test classpaths are also the directories the maven endpoint
+installs `dependencies` and `devDependencies` into, so a bare `java compile`
+picks up installed dependencies without any extra configuration.
 
 
 ## Basic Compilation
@@ -76,7 +92,7 @@ var result = compile()
 Equivalent command:
 
 ```bash
-java compile --jar jarName=example.jar
+java compile --jar jarFile=example.jar
 ```
 
 The returned `result.jarPath` contains the generated JAR path.
@@ -101,7 +117,7 @@ var result = compile()
 Equivalent command:
 
 ```bash
-java compile source=src/custom/java classes=target/classes libsDir=target/libs --jar jarName=example.jar
+java compile sourcePath=src/custom/java classesDirectory=target/classes libsDirectory=target/libs --jar jarFile=example.jar
 ```
 
 `.fromSource()` accepts a directory, source-file glob, comma-delimited string,
@@ -117,7 +133,7 @@ compile()
 Equivalent command:
 
 ```bash
-java compile source=src/main/java,src/generated/java --jar jarName=example.jar
+java compile sourcePath=src/main/java,src/generated/java --jar jarFile=example.jar
 ```
 
 ## Resources
@@ -138,7 +154,7 @@ compile()
 Equivalent command:
 
 ```bash
-java compile --jar jarName=example.jar
+java compile --jar jarFile=example.jar
 ```
 
 Use `.withResources()` for another resource directory. It accepts a single
@@ -155,7 +171,7 @@ compile()
 Equivalent command:
 
 ```bash
-java compile resources=src/resources,dist/generated,dist/extra --jar jarName=example.jar
+java compile resourcesDirectory=src/resources,dist/generated,dist/extra --jar jarFile=example.jar
 ```
 
 Roots are applied in the order supplied and merged under one namespace: when two
@@ -190,7 +206,7 @@ compile()
 Equivalent command:
 
 ```bash
-java compile --jar jarName=example.jar manifest:Implementation-Title="Example Application" manifest:Implementation-Version=1.2.3 manifest:Main-Class=example.App
+java compile --jar jarFile=example.jar manifest:Implementation-Title="Example Application" manifest:Implementation-Version=1.2.3 manifest:Main-Class=example.App
 ```
 
 When the compile project contains a `box.json`, package metadata is also used
@@ -229,23 +245,27 @@ command is created:
 ```json
 {
 	"java" : {
-		"source"         : [ "src/main/java", "src/generated/java" ],
-		"classes"        : "build/classes/java/main",
-		"libsDir"        : "build/libs",
-		"resources"      : [ "src/main/resources", "dist/generated" ],
-		"javaDocsDir"    : "build/docs/javadoc",
-		"classPath"      : [ "libs", "libs/dependencies" ],
-		"jar"            : true,
-		"jarName"        : "my-app.jar",
-		"fatJar"         : true,
-		"fatJarName"     : "my-app-all.jar",
-		"fatJarJars"     : [ "libs/dependencies" ],
-		"compileOptions" : { "release" : 8, "parameters" : true },
-		"jarOptions"     : { "mainClass" : "example.App" },
-		"fatJarOptions"  : { "duplicatePolicy" : "last" },
-		"manifest"       : { "Implementation-Title" : "My App" },
-		"javaDocs"       : true,
-		"verbose"        : false
+		"sourcePath"           : [ "src/main/java", "src/generated/java" ],
+		"testSourcePath"       : "src/test/java",
+		"classesDirectory"     : "build/classes/java/main",
+		"testClassesDirectory" : "build/classes/java/test",
+		"libsDirectory"        : "build/libs",
+		"resourcesDirectory"   : [ "src/main/resources", "dist/generated" ],
+		"testResourcesDirectory" : "src/test/resources",
+		"javaDocsDirectory"    : "build/docs/javadoc",
+		"classPath"            : [ "libs", "libs/dependencies" ],
+		"testClassPath"        : [ "dist/test-dependencies" ],
+		"jar"                  : true,
+		"jarFile"              : "my-app.jar",
+		"fatJar"               : true,
+		"fatJarFile"           : "my-app-all.jar",
+		"fatJarPaths"          : [ "libs/dependencies" ],
+		"compileOptions"       : { "release" : 8, "parameters" : true },
+		"jarOptions"           : { "mainClass" : "example.App" },
+		"fatJarOptions"        : { "duplicatePolicy" : "last" },
+		"manifest"             : { "Implementation-Title" : "My App" },
+		"javaDocs"             : true,
+		"verbose"              : false
 	}
 }
 ```
@@ -260,7 +280,7 @@ Precedence, from lowest to highest:
 3. Explicit DSL calls or command-line flags
 
 That means a project can configure everything in `box.json` and run a bare
-`java compile` — while a flag like `java compile --jar jarName=override.jar`
+`java compile` — while a flag like `java compile --jar jarFile=override.jar`
 still wins when needed.
 
 Nested structs are merged, not replaced. `compileOptions`, `jarOptions`, and
@@ -298,12 +318,23 @@ If the project has no box.json yet, `package init` is run for you first. All
 convention folder paths can be overridden:
 
 ```bash
-java init source=src/custom/java classes=build/classes libsDir=dist
+java init sourcePath=src/custom/java classesDirectory=build/classes libsDirectory=dist
 ```
+
+Pass `ide=` to also write the editor metadata in the same step, so a scaffolded
+project opens with its sources and dependencies already wired up:
+
+```bash
+java init ide=vscode
+java init ide=vscode,intellij
+```
+
+That is the same work `java ide-init` does, and it runs even when the project
+already has a `java` block (in which case only the editor metadata is written).
 
 Folders that do not exist are created. When the source folder is newly
 created, a sample `example/Example.java` is stubbed in that prints
-"Hello, World!":
+"Hello, World!" along with a matching `example/ExampleTest.java`:
 
 ```bash
 java init --force
@@ -314,6 +345,30 @@ java init --force
 When the source folder is newly created, `jar` is set to true and the JAR's
 entry point is pointed at the stubbed class, so `java run` works with zero
 arguments.
+
+The scaffold also covers the test side, so `box java test` works on a fresh
+project with no further edits:
+
+- The test half of the conventions is written (`testSourcePath`,
+  `testClassesDirectory`, `testResourcesDirectory`, `testClassPath`) and the
+  test folders are created.
+- JUnit's console launcher is added to `devDependencies` and its install path to
+  `installPaths`:
+
+```json
+"devDependencies": {
+	"org.junit.platform:junit-platform-console-standalone": "maven:org.junit.platform:junit-platform-console-standalone:1.12.2"
+}
+```
+
+One artifact is enough: the standalone JAR is self-contained, bundling the
+platform, the launcher and the Jupiter engine. `java test` runs it as-is, so
+there is no separate launcher or engine to declare.
+
+`devDependencies` and `installPaths` are **merged**, never replaced, and
+`--force` still governs only the `java` block, so re-running `java init` on a
+project that already has dependencies does not drop them. If `devDependencies`
+already names a `junit` or `testng` artifact, it is left alone.
 
 ## java run
 
@@ -339,9 +394,9 @@ java run :1=arg1 :2=arg2
 | Param | What it does |
 | --- | --- |
 | `mainClass` | The class to execute. Overrides box.json `java.jarOptions.mainClass`. Errors if no main class exists anywhere. |
-| `jarFile` | The JAR file to run. Overrides box.json `java.jarName`. |
-| `libsDirectory` | Libs directory(ies) to add to the classpath. Comma-delimited, searched recursively for JARs. Overrides box.json `java.libsDir`. |
-| `classesDirectory` | Compiled classes directory to add to the classpath. Overrides box.json `java.classes`. |
+| `jarFile` | The JAR file to run. Overrides box.json `java.jarFile`. |
+| `libsDirectory` | Libs directory(ies) to add to the classpath. Comma-delimited, searched recursively for JARs. Overrides box.json `java.libsDirectory`. |
+| `classesDirectory` | Compiled classes directory to add to the classpath. Overrides box.json `java.classesDirectory`. |
 | `javaVersion` | Java install ID to use, like `openjdk17` or `21`. Defaults to the CLI's Java, or a version matching box.json `java.minJVM` (downloaded if needed, like the compile DSL). |
 | `args` | Arguments for the run. Either a struct of `:N=value` dynamic params (ordered by numeric key) or a space-delimited string. JVM-style flags (leading single hyphen, e.g. `-Xmx512m`, `-Dfoo=bar`) are routed to the JVM; everything else is forwarded to `main()`. |
 | `--verbose` | Show verbose output including the exact command executed. |
@@ -349,7 +404,7 @@ java run :1=arg1 :2=arg2
 ### How the run target is resolved
 
 - If box.json `java.jar` is true (or `jarFile` is passed), the JAR is always
-  the target. When `jarName` is empty, the name is derived from the package
+  the target. When `jarFile` is empty, the name is derived from the package
   like the compile DSL does: `<slug>-<version>.jar` in the libs directory.
 - Otherwise the main class is run from the classes directory + any JARs found
   recursively in the libs directory(ies).
@@ -475,7 +530,7 @@ compile()
 Equivalent command:
 
 ```bash
-java compile --jar jarName=example.jar compileOptions:release=8 compileOptions:source=8 compileOptions:target=8 compileOptions:encoding=UTF-8 compileOptions:debug=lines,source compileOptions:deprecation=true compileOptions:parameters=true compileOptions:lint=deprecation,unchecked compileOptions:maxErrors=50 compileOptions:maxWarnings=50 compileOptions:proc=full compileOptions:implicit=class compileOptions:processors=com.example.Processor compileOptions:processorPath=libs/processors compileOptions:sourcePath=src/generated compileOptions:modulePath=libs/modules compileOptions:moduleSourcePath=src/modules compileOptions:addModules=java.sql,java.naming compileOptions:limitModules=java.base,java.sql
+java compile --jar jarFile=example.jar compileOptions:release=8 compileOptions:source=8 compileOptions:target=8 compileOptions:encoding=UTF-8 compileOptions:debug=lines,source compileOptions:deprecation=true compileOptions:parameters=true compileOptions:lint=deprecation,unchecked compileOptions:maxErrors=50 compileOptions:maxWarnings=50 compileOptions:proc=full compileOptions:implicit=class compileOptions:processors=com.example.Processor compileOptions:processorPath=libs/processors compileOptions:sourcePath=src/generated compileOptions:modulePath=libs/modules compileOptions:moduleSourcePath=src/modules compileOptions:addModules=java.sql,java.naming compileOptions:limitModules=java.base,java.sql
 ```
 
 The top-level `.setVerbose( true )` controls verbose compiler output. Verbosity
@@ -511,7 +566,7 @@ compile()
 Equivalent command:
 
 ```bash
-java compile --jar jarName=example.jar jarOptions:compress=false jarOptions:mainClass=example.App jarOptions:date=2026-01-01T00:00:00Z jarOptions:moduleVersion=1.0.0 jarOptions:hashModules=com.example.* jarOptions:modulePath=libs/modules jarOptions:noManifest=false
+java compile --jar jarFile=example.jar jarOptions:compress=false jarOptions:mainClass=example.App jarOptions:date=2026-01-01T00:00:00Z jarOptions:moduleVersion=1.0.0 jarOptions:hashModules=com.example.* jarOptions:modulePath=libs/modules jarOptions:noManifest=false
 ```
 
 The `date` option accepts either a CFML date value, such as `now()`, or a date
@@ -552,8 +607,119 @@ var result = compile()
 Equivalent command:
 
 ```bash
-java compile classPath=libs --jar jarName=example.jar
+java compile classPath=libs --jar jarFile=example.jar
 ```
+
+## Compiling Tests
+
+`java compile --tests` compiles the test source set in addition to the main
+sources. Main sources are always compiled; tests are additive, because the test
+source set needs the main output on its classpath in order to compile.
+
+```bash
+java compile --tests
+```
+
+Two passes run in order:
+
+1. `sourcePath` -> `classesDirectory`, classpath `classPath`.
+2. `testSourcePath` -> `testClassesDirectory`, classpath `classesDirectory` +
+   `classPath` + `testClassPath`.
+
+The second classpath deliberately mirrors Gradle, which puts main output, main
+dependencies and test dependencies on the test compile classpath. Main
+dependencies are never withheld from tests.
+
+The test pass is skipped with a message (not an error) when no test sources
+exist. Test classes are never added to a `jar` or `fatJar` unless explicitly
+asked for. Both passes honour `compileOptions`, and resources follow
+`resourcesDirectory` and `testResourcesDirectory` respectively.
+
+In the DSL, opt in with `.setCompileTests( true )`:
+
+```js
+compile()
+	.setCompileTests( true )
+	.run();
+```
+
+## java test
+
+`java test` compiles both source sets and runs the project's tests. Nothing
+test-specific has to be configured beyond a test framework in
+`devDependencies`.
+
+```bash
+java test
+java test testClasses=com.foo.MyTest
+java test testClasses=com.foo.MyTest#myMethod,com.foo.*
+java test reportsDirectory=build/test-results --JSON
+```
+
+| Param | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `testClasses` | value | all | Select tests by fully qualified class name: `com.foo.MyTest`, `com.foo.MyTest#myMethod`, `com.foo.*`, `com.foo.**`, `*Test`. Comma-delimited, OR'd together. `*` matches within one path segment, `**` crosses segments. |
+| `reportsDirectory` | path | off | Directory for the JUnit XML report. Omit for no report file. |
+| `--skipCompile` | boolean | false | Run against the output already on disk. |
+| `--clean` | boolean | false | Run `java clean` first, then compile and test. |
+| `failIfNoTests` | boolean | true | Fail when no tests are found. Turn it off with `failIfNoTests=false` or `--noFailIfNoTests`. |
+| `--JSON` | boolean | false | Machine-readable summary: totals, failures, per-test status and durations. |
+
+### The runner
+
+JUnit does the running; CommandBox does not provide a test runner. `java test`
+simply puts `junit-platform-console-standalone` on the test classpath and invokes
+JUnit's own console launcher from it:
+
+```bash
+java -jar junit-platform-console-standalone.jar execute \
+	--class-path "<test classpath>" \
+	--select-class=com.foo.MyTest \
+	--reports-dir=<scratch>
+```
+
+That jar is a single self-contained artifact — it bundles the platform, the
+launcher and the Jupiter engine — so it is the only test dependency the scaffold
+needs, and nothing compiled ships with CommandBox to support it. When the jar is
+missing from the test classpath the command fails with exit code 4 and names the
+dependency to add.
+
+Discovery is limited to `testClassesDirectory`, so dependency JARs are never
+scanned for tests.
+
+If `testClasses` matches no compiled test class, the command says so rather than
+passing an unknown selector to the runner.
+
+### Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| 0 | all tests passed |
+| 1 | a test failed, or the build failed (compile error) |
+| 3 | no tests found, or a `testClasses` pattern matched nothing |
+| 4 | no test runner found on the test classpath, or the launcher failed to start |
+
+A non-zero exit code is what makes CI fail, and it also stops a
+`java test && ...` chain.
+
+## java clean
+
+`java clean` removes generated output so the next build starts fresh:
+
+- The `classesDirectory` and `testClassesDirectory` output trees.
+- The `libsDirectory` JAR output for the current version.
+
+Dependency directories are left alone so a clean does not force a re-download.
+Pass `--dependencies` to remove the runtime and dev dependency directories as
+well.
+
+```bash
+java clean
+java clean --dependencies
+```
+
+`java compile --clean` and `java test --clean` run the clean step first and then
+continue — the equivalent of `gradle clean build` versus `gradle build`.
 
 ## java ide-init
 
@@ -575,13 +741,43 @@ generated. The command reports the editors it detected and the files it created.
 | IntelliJ | `.idea` or a `*.iml` file | `.iml`, `.idea/modules.xml`, `.idea/compiler.xml` |
 
 Existing files are merged rather than replaced, so settings that are not ours are
-kept, and re-running produces the same files. If no editor is detected the
-command fails rather than writing nothing.
+kept, and re-running produces the same files. On a project with no editor marker
+yet — a folder that was just `java init`-ed, for example — the command writes VS
+Code metadata instead of failing, so it always produces something useful. Pass
+`ide=` to target a specific editor instead of detecting:
+
+```bash
+java ide-init ide=vscode
+java ide-init ide=vscode,intellij
+```
 
 VS Code points at the classpath directory with a glob (`libs/**/*.jar`), so
 changing a dependency version and re-running only `install` needs no
 regeneration. The Eclipse and IntelliJ formats list JAR files as they are at
 generation time, so **re-run `java ide-init` after any dependency change**.
+
+VS Code is configured with `java.project.sourcePaths` covering both
+`sourcePath` and `testSourcePath`, and `java.project.referencedLibraries` as
+`{ "include": [ ... ] }` covering both `classPath` and `testClassPath`, so the
+editor's own JUnit runner can resolve tests without mixing test-only JARs into
+the runtime set.
+
+`java.project.outputPath` is `build/ide/classes`, its own folder, because the
+editor's compiler is a separate incremental compiler that owns its output and
+requires it to be empty when it takes it over. Sources and the dependency globs
+are shared with the command line; generated classes are not. The command line
+keeps using `classesDirectory` and `testClassesDirectory`.
+
+When `classPath` or `testClassPath` is empty in box.json (which is what
+`java init` writes) the conventions are used instead, exactly like the compile
+DSL: `dist/dependencies` and `dist/test-dependencies`. The globs are written even
+before anything is installed, so `install` alone makes the jars visible without
+regenerating the metadata.
+
+That means an editor that runs JUnit from the gutter uses its own compiler and
+its own classpath, not this command. The conventions are intentionally identical
+so the two agree in practice. Test dependencies that are not installed yet are
+skipped rather than being an error for the editor metadata.
 
 If `classPath` points at a directory that is missing or has no JARs, the command
 fails and names the path instead of generating metadata that resolves nothing.
@@ -591,7 +787,7 @@ fails and names the path instead of generating metadata that resolves nothing.
 `.toFatJar()` creates the project JAR and merges supplied dependency JARs into
 it.
 
-`.toFatJar()` second argument (and `fatJarJars`) accepts JAR files, directories
+`.toFatJar()` second argument (and `fatJarPaths`) accepts JAR files, directories
 containing JARs, or a comma-delimited mix of both, the same way `classPath`
 does. Directories are searched recursively and an empty directory is reported as
 an error.
@@ -612,7 +808,7 @@ var result = compile()
 Equivalent command:
 
 ```bash
-java compile classPath=libs/dependencies --fatJar fatJarName=example-all.jar fatJarJars=libs/dependencies
+java compile classPath=libs/dependencies --fatJar fatJarFile=example-all.jar fatJarPaths=libs/dependencies
 ```
 
 Configure merge behavior with `configureFatJar()`:
@@ -636,7 +832,7 @@ compile()
 Equivalent command:
 
 ```bash
-java compile --fatJar fatJarName=example-all.jar fatJarJars=libs/dependency-one.jar,libs/dependency-two.jar fatJarOptions:mergeServiceDescriptors=true fatJarOptions:excludeSignatures=true fatJarOptions:duplicatePolicy=last
+java compile --fatJar fatJarFile=example-all.jar fatJarPaths=libs/dependency-one.jar,libs/dependency-two.jar fatJarOptions:mergeServiceDescriptors=true fatJarOptions:excludeSignatures=true fatJarOptions:duplicatePolicy=last
 ```
 
 `duplicatePolicy` accepts `last`, `first`, or `error`. Dependencies are applied
@@ -670,7 +866,7 @@ compile()
 ```
 
 ```bash
-java compile --fatJar fatJarName=example-all.jar fatJarJars=log4j-core.jar,log4j-layout-template-json.jar fatJarOptions:mergeLog4jPluginCaches=true
+java compile --fatJar fatJarFile=example-all.jar fatJarPaths=log4j-core.jar,log4j-layout-template-json.jar fatJarOptions:mergeLog4jPluginCaches=true
 ```
 
 When enabled:
@@ -715,7 +911,9 @@ task runners, custom commands) gets them:
 | `postJavaCompile` | last thing in `run()`, after the JAR work | the exact struct `run()` returns; listeners may add to it |
 
 `preJavaCompile` receives `projectRoot`, `jdkBinDirectory`, `sourceDirectory`,
-`sourcePaths`, `classOutputDirectory`, `classPaths`, `compileOptions`,
+`sourcePaths`, `classOutputDirectory`, `classPaths`, `compileTests`,
+`testSourcePaths`, `testClassOutputDirectory`, `testClassPaths`,
+`testResourcePaths`, `compileOptions`,
 `compileOptionsParams`, `encoding`, `resourcePaths`, `resourcePath`, `libsDir`,
 `jarNameString`, `fatJarNameString`, `fatJarPaths`, `fatJarOptions`,
 `jarOptions`, `manifest`, `createJar`, `useJavaDoc`, `verbose`, and `dsl`.
@@ -760,10 +958,12 @@ print.line( result.classOutputDirectory );
 Equivalent command:
 
 ```bash
-java compile --jar jarName=example.jar --JSON
+java compile --jar jarFile=example.jar --JSON
 ```
 
 The result includes `projectRoot`, `jdkBinDirectory`, `sourcePaths`,
 `classOutputDirectory`, `libsDirectory`, `jarPath`, `javaDocsPath`,
 `resourcePath`, `resourcePaths`, `classPaths`, `fatJarPaths`, `fatJarDependencyCount`,
-`fatJarRequested`, `compileOptions`, `jarOptions`, `encoding`, and `manifest`.# Compile DSL
+`fatJarRequested`, `compileOptions`, `jarOptions`, `encoding`, `manifest`,
+`testsCompiled`, `testSourcePaths`, `testClassOutputDirectory`,
+`testResourcePaths`, and `testClassPaths`.# Compile DSL

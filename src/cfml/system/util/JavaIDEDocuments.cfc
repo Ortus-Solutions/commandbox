@@ -13,13 +13,17 @@
 component {
 
 	/**
-	 * Applies a specification's patches to the file content and returns the result.
+	 * Applies a specification's patches and returns the resulting document.
+	 *
+	 * JSON comes back as a struct so the caller can hand it to JSONService, which owns
+	 * pretty printing and the JSON.* settings. XML comes back as a DOM, and any other
+	 * format as a string.
 	 *
 	 * @specification A struct describing the file, its format, and the patches to apply.
 	 * @current The existing file content, or an empty string when the file is new.
 	 * @exists Whether the file already exists.
 	 */
-	string function render( required struct specification, required string current, required boolean exists ) {
+	any function apply( required struct specification, required string current, required boolean exists ) {
 		var spec = arguments.specification;
 		var document = parseDocument( spec.format, arguments.exists ? arguments.current : spec.seed );
 		for( var container in ( spec.containers ?: [] ) ) {
@@ -30,9 +34,19 @@ component {
 		for( var patch in spec.patches ) {
 			document = writeValue( spec.format, document, patch.key, patch.value, patch.parent ?: "" );
 		}
-		return stringify( spec.format, document );
+		return document;
 	}
 
+	/**
+	 * Parses existing file content into the working document for its format.
+	 *
+	 * XML is parsed with external entities and doctypes disabled, since the file is
+	 * editor-owned content that we only merge into.
+	 *
+	 * @format The file format: json, xml, properties, or text.
+	 * @content The current file content, or the format's seed content.
+	 * @returns A struct for JSON, a DOM for XML, or the content itself for other formats.
+	 */
 	private any function parseDocument( required string format, required string content ) {
 		if( arguments.format == "json" ) {
 			var result = deserializeJSON( arguments.content );
@@ -55,10 +69,13 @@ component {
 		return factory.newDocumentBuilder().parse( source );
 	}
 
-	private string function stringify( required string format, required any document ) {
-		if( arguments.format == "json" ) {
-			return serializeJSON( arguments.document );
-		}
+	/**
+	 * Serializes a document from apply() for the formats that are not written by JSONService.
+	 *
+	 * @format The file format.
+	 * @document The document to serialize.
+	 */
+	string function stringify( required string format, required any document ) {
 		if( arguments.format != "xml" ) {
 			return arguments.document;
 		}
@@ -76,6 +93,13 @@ component {
 		return writer.toString();
 	}
 
+	/**
+	 * Evaluates an XPath expression against a document.
+	 *
+	 * @document The DOM to query.
+	 * @selector The XPath expression.
+	 * @returns The matching node set.
+	 */
 	private any function nodes( required any document, required string selector ) {
 		var factory = xmlClass( "javax.xml.xpath.XPathFactory" )
 			.getMethod( "newInstance", [] ).invoke( javaCast( "null", "" ), [] );
@@ -86,6 +110,19 @@ component {
 		);
 	}
 
+	/**
+	 * Applies one patch to the document, per format.
+	 *
+	 * JSON keys are replaced wholesale, XML nodes are re-written, and properties files
+	 * have the matching key replaced while everything else is preserved.
+	 *
+	 * @format The file format.
+	 * @document The working document.
+	 * @key The format-specific selector or property name.
+	 * @value The values to write.
+	 * @parent The parent selector, for XML formats.
+	 * @returns The updated document.
+	 */
 	private any function writeValue(
 		required string format, required any document, required string key,
 		required array value, required string parent
@@ -110,6 +147,12 @@ component {
 		return arguments.document;
 	}
 
+	/**
+	 * Reads the property name out of one properties-file line.
+	 *
+	 * @line The line to inspect.
+	 * @returns The trimmed property name.
+	 */
 	private string function propertyKey( required string line ) {
 		return trim( listFirst( reReplace( arguments.line, "[=:]", chr( 9 ), "one" ), chr( 9 ) ) );
 	}

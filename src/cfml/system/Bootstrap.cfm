@@ -178,7 +178,7 @@ This file will stay running the entire time the shell is open
 			shell.shutdown();
 
 			// Clear all caches: template, ...
-			SystemCacheClear( "all" );
+			SystemCacheClear( "page" );
 			shell = javacast( "null", "" );
 
 			// reload wirebox
@@ -204,10 +204,8 @@ This file will stay running the entire time the shell is open
 
 	interceptorService.announceInterception( 'onCLIExit' );
 
-	//wireBox.getInstance( dsl='box:ModuleService' ).onShutdown();
-	//wireBox.shutdown();
-    //system.runFinalization();
-    //system.gc();
+	wireBox.getInstance( dsl='box:ModuleService' ).onShutdown();
+	wireBox.shutdown();
 </cfscript>
 
 	<cfcatch type="any">

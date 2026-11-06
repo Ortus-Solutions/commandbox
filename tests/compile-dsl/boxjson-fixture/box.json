@@ -3,11 +3,11 @@
     "slug" : "boxjson-compile-test",
     "version" : "2.0.0",
     "java" : {
-        "source"    : "src/custom/java",
-        "classes"   : "custom-classes",
-        "libsDir"   : "custom-libs",
+        "sourcePath"    : "src/custom/java",
+        "classesDirectory" : "custom-classes",
+        "libsDirectory" : "custom-libs",
         "jar"       : true,
-        "jarName"   : "boxjson-app.jar",
+        "jarFile"   : "boxjson-app.jar",
         "javaDocs"  : true,
         "compileOptions" : {
             "release" : 8

@@ -17,14 +17,14 @@ component accessors="true" extends='commandbox.system.BaseCommand' {
 	 *
 	 * Relative project roots are resolved from the task CFC directory.
 	 *
-	 * @projectRoot Project root to compile. Defaults to the task CFC directory.
+	 * @projectRootDirectory Project root to compile. Defaults to the task CFC directory.
 	 * @return An instance of the CompileDSL for further configuration.
 	 */
-	function compile( string projectRoot="" ) {
+	function compile( string projectRootDirectory="" ) {
 		return getinstance( "compileDSL" )
 			.projectRoot(
-				len( arguments.projectRoot )
-					? resolvePath( arguments.projectRoot )
+				len( arguments.projectRootDirectory )
+					? resolvePath( arguments.projectRootDirectory )
 					: resolvePath( "" )
 			);
 	}

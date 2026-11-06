@@ -26,13 +26,14 @@ component extends="commandbox.system.BaseCommand" {
 
 	/**
 	 * @mainClass The class to execute. Overrides box.json java.jarOptions.mainClass.
-	 * @jarFile The JAR file to run. Overrides box.json java.jarName.
+	 * @jarFile The JAR file to run. Overrides box.json java.jarFile.
 	 * @jarFile.optionsFileComplete true
-	 * @libsDirectory Libs directory(ies) to add to the classpath. Comma-delimited, searched recursively for JARs. Overrides box.json java.libsDir.
+	 * @libsDirectory Libs directory(ies) to add to the classpath. Comma-delimited, searched recursively for JARs. Overrides box.json java.libsDirectory.
 	 * @libsDirectory.optionsDirectoryComplete true
-	 * @classesDirectory Compiled classes directory to add to the classpath. Overrides box.json java.classes.
+	 * @classesDirectory Compiled classes directory to add to the classpath. Overrides box.json java.classesDirectory.
 	 * @classesDirectory.optionsDirectoryComplete true
 	 * @javaVersion Java install ID to use, like openjdk17. Defaults to the CLI's Java or a version matching box.json java.minJVM.
+	 * @javaVersion.optionsUDF javaVersionComplete
 	 * @args Java program arguments as a space-delimited string, or a struct of :N=value dynamic params.
 	 * @verbose Show verbose output
 	 */
@@ -72,7 +73,7 @@ component extends="commandbox.system.BaseCommand" {
 		// Resolve the run target. jar=true (or an explicit jarFile) means the
 		// JAR is always the target - never fall back to class files.
 		var useJar = arguments.jarFile.len() || ( boxJSON.java.jar ?: false );
-		var runJarFile = arguments.jarFile.len() ? arguments.jarFile : ( boxJSON.java.jarName ?: "" );
+		var runJarFile = arguments.jarFile.len() ? arguments.jarFile : ( boxJSON.java.jarFile ?: "" );
 
 		// When box.json says to make a jar but no name is given, derive it from
 		// the package the same way the compile DSL does: <slug>-<version>.jar
@@ -81,15 +82,15 @@ component extends="commandbox.system.BaseCommand" {
 		if( useJar && runJarFile.len() ) {
 			// A bare filename (no path separator) gets the libs dir prepended
 			if( !reFind( "[\\/]", runJarFile ) ) {
-				runJarFile = resolvePath( boxJSON.java.libsDir ?: "libs" ) & "/" & runJarFile;
+				runJarFile = resolvePath( boxJSON.java.libsDirectory ?: "libs" ) & "/" & runJarFile;
 			}
 		} else if( useJar ) {
-			var libsDirPath = resolvePath( boxJSON.java.libsDir ?: "libs" );
+			var libsDirPath = resolvePath( boxJSON.java.libsDirectory ?: "libs" );
 			var derivedName = getJarNameFromPackage();
 			if( derivedName.len() ) {
 				runJarFile = libsDirPath & "/" & derivedName;
 			} else {
-				error( "Cannot determine the JAR name. Set java.jarName in box.json or pass jarFile=." );
+				error( "Cannot determine the JAR name. Set java.jarFile in box.json or pass jarFile=." );
 			}
 		}
 
@@ -111,7 +112,7 @@ component extends="commandbox.system.BaseCommand" {
 			error( "No main class found. Pass mainClass= or set java.jarOptions.mainClass in box.json." );
 		}
 
-		var classesDir = arguments.classesDirectory.len() ? arguments.classesDirectory : ( boxJSON.java.classes ?: "" );
+		var classesDir = arguments.classesDirectory.len() ? arguments.classesDirectory : ( boxJSON.java.classesDirectory ?: "" );
 		var classesDirPath = classesDir.len() ? resolvePath( classesDir ) : "";
 		if( !classesDirPath.len() || !directoryExists( classesDirPath ) ) {
 			error( "Compiled classes directory not found: [#classesDir#]. Run `java compile` to build the project first." );
@@ -205,6 +206,18 @@ component extends="commandbox.system.BaseCommand" {
 	}
 
 	/**
+	 * Completion for `javaVersion`, listing the Java installs this machine knows about.
+	 */
+	function javaVersionComplete() {
+		return javaService
+			.listJavaInstalls()
+			.keyArray()
+			.map( ( installID ) => {
+				return { name : installID, group : 'Java Versions' };
+			} );
+	}
+
+	/**
 	 * Resolves the Java program arguments from the `args` param.
 	 *
 	 * Accepts either a struct of `:N=value` dynamic params (sorted by numeric
@@ -252,13 +265,13 @@ component extends="commandbox.system.BaseCommand" {
 	private string function buildClassPath( required string classesArg, required string libsArg, required struct boxJSON ) {
 		var entries = [];
 
-		var classesDir = arguments.classesArg.len() ? arguments.classesArg : ( boxJSON.java.classes ?: "" );
+		var classesDir = arguments.classesArg.len() ? arguments.classesArg : ( boxJSON.java.classesDirectory ?: "" );
 		if( len( classesDir ) && directoryExists( resolvePath( classesDir ) ) ) {
 			// Strip any trailing slash so it can't escape the surrounding quotes
 			entries.append( reReplace( resolvePath( classesDir ), "[\\/]+$", "" ) );
 		}
 
-		var libsList = arguments.libsArg.len() ? arguments.libsArg : ( boxJSON.java.libsDir ?: "" );
+		var libsList = arguments.libsArg.len() ? arguments.libsArg : ( boxJSON.java.libsDirectory ?: "" );
 		for( var libDir in listToArray( libsList, "," ) ) {
 			var libDirPath = resolvePath( trim( libDir ) );
 			if( !directoryExists( libDirPath ) ) {

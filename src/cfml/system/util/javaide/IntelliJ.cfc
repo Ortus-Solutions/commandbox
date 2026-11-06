@@ -11,11 +11,23 @@
 */
 component extends="BaseEmitter" {
 
+	/**
+	 * Detects whether this project already uses IntelliJ.
+	 *
+	 * @root The project root.
+	 * @returns True when a `.idea` folder or an `.iml` file is present.
+	 */
 	boolean function detect( required string root ) {
 		return directoryExists( arguments.root & "/.idea" )
 			|| directoryList( arguments.root, false, "path", "*.iml" ).len() > 0;
 	}
 
+	/**
+	 * Describes the IntelliJ files to write from the project model.
+	 *
+	 * @model The editor-neutral project model.
+	 * @returns The file specifications.
+	 */
 	array function files( required struct model ) {
 		var moduleFile = "commandbox-java.iml";
 		var manager = "/module/component[@name='NewModuleRootManager']";
@@ -37,6 +49,13 @@ component extends="BaseEmitter" {
 				[ '<sourceFolder url="#escape( rootURL )#" isTestSource="false"/>' ], content
 			) );
 		}
+		for( var root in arguments.model.testSourceRoots ) {
+			var rootURL = url( root, arguments.model );
+			patches.append( patch(
+				content & "/sourceFolder[@url=#literal( rootURL )#]",
+				[ '<sourceFolder url="#escape( rootURL )#" isTestSource="true"/>' ], content
+			) );
+		}
 		for( var root in arguments.model.resourceRoots ) {
 			if( !directoryExists( root ) || arguments.model.sourceRoots.find( root ) ) continue;
 			var rootURL = url( root, arguments.model );
@@ -45,9 +64,19 @@ component extends="BaseEmitter" {
 				[ '<sourceFolder url="#escape( rootURL )#" type="java-resource"/>' ], content
 			) );
 		}
+		for( var root in arguments.model.testResourceRoots ) {
+			if( !directoryExists( root ) || arguments.model.testSourceRoots.find( root ) ) continue;
+			var rootURL = url( root, arguments.model );
+			patches.append( patch(
+				content & "/sourceFolder[@url=#literal( rootURL )#]",
+				[ '<sourceFolder url="#escape( rootURL )#" type="java-test-resource"/>' ], content
+			) );
+		}
 		// Built with chr( 36 ) so the $MODULE_DIR$ placeholder is not read as syntax.
 		var placeholder = chr( 36 ) & "MODULE_DIR" & chr( 36 );
-		for( var classPathEntry in arguments.model.classPath ) {
+		var classPathEntries = duplicate( arguments.model.classPath );
+		classPathEntries.append( arguments.model.testClassPath, true );
+		for( var classPathEntry in classPathEntries ) {
 			var base = relative( classPathEntry.path, arguments.model );
 			var libraries = [];
 			for( var jar in classPathEntry.resolved ) {
@@ -112,12 +141,26 @@ component extends="BaseEmitter" {
 		return result;
 	}
 
+	/**
+	 * Builds a `file://` URL for a path inside the IntelliJ module.
+	 *
+	 * @path The absolute path to convert.
+	 * @model The editor-neutral project model.
+	 * @returns The module-relative URL, or an absolute one when the path is outside the module.
+	 */
 	private string function url( required string path, required struct model ) {
 		var value = relative( arguments.path, arguments.model );
 		if( value == "." ) return "file://$MODULE_DIR$";
 		return value == arguments.path ? "file://" & value : "file://$MODULE_DIR$/" & value;
 	}
 
+	/**
+	 * Builds a `jar://` library URL for a JAR inside the IntelliJ module.
+	 *
+	 * @path The absolute JAR path to convert.
+	 * @model The editor-neutral project model.
+	 * @returns The module-relative jar URL, always ending in the archive separator.
+	 */
 	private string function jarURL( required string path, required struct model ) {
 		return replace( url( arguments.path, arguments.model ), "file://", "jar://" ) & "!/";
 	}

@@ -1,0 +1,25 @@
+{
+    "name":"Java Test Fixture",
+    "slug":"java-test-fixture",
+    "version":"1.0.0",
+    "dependencies":{},
+    "devDependencies":{
+        "org.junit.platform:junit-platform-console-standalone":"maven:org.junit.platform:junit-platform-console-standalone:1.12.2"
+    },
+    "installPaths":{
+        "org.junit.platform:junit-platform-console-standalone":"dist/test-dependencies/org.junit.platform-junit-platform-console-standalone/"
+    },
+    "java":{
+        "sourcePath":"src/main/java",
+        "testSourcePath":"src/test/java",
+        "classesDirectory":"dist/classes",
+        "testClassesDirectory":"dist/test-classes",
+        "resourcesDirectory":"src/main/resources",
+        "testResourcesDirectory":"src/test/resources",
+        "libsDirectory":"dist/libs",
+        "classPath":[],
+        "testClassPath":[
+            "dist/test-dependencies"
+        ]
+    }
+}

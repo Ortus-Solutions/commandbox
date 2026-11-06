@@ -38,6 +38,19 @@ component accessors=true {
 	property name='generatedManifestFile'	type='string';
 	property name='resourcePath'			type='string';
 	property name='resourcePathConfigured'	type='boolean';
+	/* folder inside root project where test sources reside (.java) */
+	property name='testSourceDirectory'		type='string';
+	property name='testSourcePaths'			type='array';
+	property name='testClassOutputDirectory' type='string';
+	property name='testResourcePath'		type='string';
+	property name='testResourcePathConfigured' type='boolean';
+	property name='testClassPaths'			type='array';
+	property name='compileTests'			type='boolean';
+	/* True once a caller (command arg or box.json) has set the matching test path */
+	property name='testSourceConfigured'	type='boolean';
+	property name='testClassesConfigured'	type='boolean';
+	property name='testClassPathConfigured'	type='boolean';
+	property name='classPathConfigured'		type='boolean';
 	property name='classTextFilePaths'		type='array';
 	property name='fatJarPaths'				type='array';
 	property name='fatJarOptions'			type='struct';
@@ -73,7 +86,8 @@ component accessors=true {
         setClassOutputDirectory( 'build/classes/java/main' );
         setVerbose( false );
         setEncode( '' );
-		setClassPaths( [] );
+        variables.classPaths = [];
+        variables.classPathConfigured = false;
 		setSourcePaths( [''] );
 		setCreateJar( false );
 		setLibsDir( 'build/libs' );
@@ -91,6 +105,21 @@ component accessors=true {
 		setResourcePath( 'src/main/resources/' );
 		setResourcePathConfigured( false );
 		setClassTextFilePaths(['']);
+		// Test-half conventions. The test source and test class output defaults are
+		// derived from the main ones on read (see getTestSourceDirectory()), so they
+		// stay in step when java.sourcePath is overridden. These stored values are
+		// the fallback used when no `main` path segment is available to swap.
+		variables.testSourceDirectory = 'src/test/java/';
+		variables.testClassOutputDirectory = 'build/classes/java/test';
+		variables.testSourcePaths = [''];
+		variables.testResourcePath = 'src/test/resources/';
+		variables.testResourcePathConfigured = false;
+		variables.testClassPaths = [];
+		variables.testClassPathConfigured = false;
+		variables.compileTests = false;
+		variables.testSourceConfigured = false;
+		variables.testClassesConfigured = false;
+		variables.testClassPathConfigured = false;
 		setFatJarPaths( [] );
 		setFatJarDuplicateReport( [] );
 		setThinJarRequested( false );
@@ -142,22 +171,26 @@ component accessors=true {
 			return this;
 		}
 
-		if( structKeyExists( javaConfig, "source" ) && hasValue( javaConfig.source ) ) fromSource( javaConfig.source );
-		if( structKeyExists( javaConfig, "classes" ) && hasValue( javaConfig.classes ) ) toClasses( javaConfig.classes );
-		if( structKeyExists( javaConfig, "libsDir" ) && hasValue( javaConfig.libsDir ) ) setLibsDir( javaConfig.libsDir );
-		if( structKeyExists( javaConfig, "resources" ) && hasValue( javaConfig.resources ) ) withResources( javaConfig.resources );
-		if( structKeyExists( javaConfig, "javaDocsDir" ) && hasValue( javaConfig.javaDocsDir ) ) setJavaDocDestinationDir( javaConfig.javaDocsDir );
+		if( structKeyExists( javaConfig, "sourcePath" ) && hasValue( javaConfig.sourcePath ) ) fromSource( javaConfig.sourcePath );
+		if( structKeyExists( javaConfig, "classesDirectory" ) && hasValue( javaConfig.classesDirectory ) ) toClasses( javaConfig.classesDirectory );
+		if( structKeyExists( javaConfig, "libsDirectory" ) && hasValue( javaConfig.libsDirectory ) ) setLibsDir( javaConfig.libsDirectory );
+		if( structKeyExists( javaConfig, "resourcesDirectory" ) && hasValue( javaConfig.resourcesDirectory ) ) withResources( javaConfig.resourcesDirectory );
+		if( structKeyExists( javaConfig, "javaDocsDirectory" ) && hasValue( javaConfig.javaDocsDirectory ) ) setJavaDocDestinationDir( javaConfig.javaDocsDirectory );
 		if( structKeyExists( javaConfig, "classPath" ) && hasValue( javaConfig.classPath ) ) withClassPath( javaConfig.classPath );
+		if( structKeyExists( javaConfig, "testSourcePath" ) && hasValue( javaConfig.testSourcePath ) ) fromTestSource( javaConfig.testSourcePath );
+		if( structKeyExists( javaConfig, "testClassesDirectory" ) && hasValue( javaConfig.testClassesDirectory ) ) toTestClasses( javaConfig.testClassesDirectory );
+		if( structKeyExists( javaConfig, "testResourcesDirectory" ) && hasValue( javaConfig.testResourcesDirectory ) ) withTestResources( javaConfig.testResourcesDirectory );
+		if( structKeyExists( javaConfig, "testClassPath" ) && hasValue( javaConfig.testClassPath ) ) withTestClassPath( javaConfig.testClassPath );
 		if( structKeyExists( javaConfig, "compileOptions" ) && structCount( javaConfig.compileOptions ?: {} ) ) compileOptions( javaConfig.compileOptions );
 		if( structKeyExists( javaConfig, "jarOptions" ) && structCount( javaConfig.jarOptions ?: {} ) ) jarOptions( javaConfig.jarOptions );
 		if( structKeyExists( javaConfig, "fatJarOptions" ) && structCount( javaConfig.fatJarOptions ?: {} ) ) configureFatJar( javaConfig.fatJarOptions );
 		if( structKeyExists( javaConfig, "verbose" ) && isBoolean( javaConfig.verbose ) ) setVerbose( javaConfig.verbose );
 		if( structKeyExists( javaConfig, "javaDocs" ) && isBoolean( javaConfig.javaDocs ) ) setUseJavaDoc( javaConfig.javaDocs );
 		if( structKeyExists( javaConfig, "jar" ) && isBoolean( javaConfig.jar ) && javaConfig.jar ) {
-			toJar( javaConfig.jarName ?: "" );
+			toJar( javaConfig.jarFile ?: "" );
 		}
 		if( structKeyExists( javaConfig, "fatJar" ) && isBoolean( javaConfig.fatJar ) && javaConfig.fatJar ) {
-			toFatJar( javaConfig.fatJarName ?: "", javaConfig.fatJarJars ?: [] );
+			toFatJar( javaConfig.fatJarFile ?: "", javaConfig.fatJarPaths ?: [] );
 		}
 
 		return this;
@@ -459,17 +492,268 @@ component accessors=true {
 	 * @returns The current DSL instance.
 	 */
 	function withClassPath( required any classPath ) {
+		setClassPaths( expandClassPaths( arguments.classPath ) );
+		return this;
+	}
+
+	/**
+	 * Sets the resolved compiler classpath entries.
+	 *
+	 * @classPaths The resolved classpath entries.
+	 * @returns The current DSL instance.
+	 */
+	function setClassPaths( required array classPaths ) {
+		variables.classPaths = arguments.classPaths;
+		variables.classPathConfigured = true;
+		return this;
+	}
+
+	/**
+	 * Resolves the compiler classpath entries.
+	 *
+	 * When nothing was configured the convention default, `dist/dependencies`,
+	 * is used: that is where the maven endpoint installs runtime dependencies.
+	 *
+	 * @returns Array of resolved classpath entries.
+	 */
+	function getClassPaths() {
+		if( !variables.classPathConfigured ) {
+			variables.classPaths = expandClassPaths( "dist/dependencies" );
+			variables.classPathConfigured = true;
+		}
+		return variables.classPaths;
+	}
+
+	/**
+	 * Expands compiler classpath entries, skipping anything that does not exist on
+	 * disk. A path that resolves to a file is used as-is; a directory contributes
+	 * every JAR beneath it, recursively; a missing path is ignored so a convention
+	 * directory that has not been populated yet is not an error.
+	 *
+	 * @classPath A JAR, JAR directory, comma-delimited value, or array of paths.
+	 * @returns Array of resolved classpath entries.
+	 */
+	private array function expandClassPaths( required any classPath ) {
 		if( isSimpleValue( arguments.classPath ) ) {
 			arguments.classPath = listToArray( arguments.classPath, ",", true );
 		}
-		arguments.classPath = arguments.classPath.reduce( function( classPaths,cp ) {
-			var resolvedPath = fileSystemutil.resolvePath( cp, getProjectRoot() );
+		return arguments.classPath.reduce( function( classPaths, cp ) {
+			if( !isSimpleValue( cp ) || !len( trim( cp ) ) ) {
+				return classPaths;
+			}
+			var resolvedPath = fileSystemutil.resolvePath( trim( cp ), getProjectRoot() );
 			if( fileExists( resolvedPath ) ) {
 				return classPaths.append( resolvedPath );
 			}
-			return classPaths.append(directorylist( resolvedPath, true, 'array', '*jar' ), true);
+			if( directoryExists( resolvedPath ) ) {
+				return classPaths.append( directorylist( resolvedPath, true, 'array', '*jar' ), true );
+			}
+			return classPaths;
 		}, [] );
-		setClassPaths(  arguments.classPath );
+	}
+
+	/**
+	 * Sets test-source directories, files, globs, or comma-delimited test source paths.
+	 *
+	 * @testSourcePaths A test source directory, file, glob, comma-delimited string, or array of paths.
+	 * @returns The current DSL instance.
+	 */
+	function fromTestSource( required any testSourcePaths ) {
+		if( isSimpleValue( arguments.testSourcePaths ) ) {
+			arguments.testSourcePaths = listToArray( arguments.testSourcePaths, ",", true );
+		}
+		variables.testSourcePaths = arguments.testSourcePaths.map( function( s ) {
+			return fileSystemutil.resolvePath( arguments.s, getProjectRoot() );
+		} );
+		variables.testSourceConfigured = true;
+		return this;
+	}
+
+	/**
+	 * Sets the directory where compiled test classes are written.
+	 *
+	 * @testClassOutputDirectory The test class output directory.
+	 * @returns The current DSL instance.
+	 */
+	function toTestClasses( required testClassOutputDirectory ) {
+		variables.testClassOutputDirectory = arguments.testClassOutputDirectory;
+		variables.testClassesConfigured = true;
+		return this;
+	}
+
+	/**
+	 * Sets the test resource roots, replacing any that were configured before.
+	 *
+	 * @resourcesPath A test resource directory, a comma-delimited list of directories, or an array of directories.
+	 * @returns The current DSL instance.
+	 */
+	function withTestResources( any resourcesPath ) {
+		var newPaths = isArray( arguments.resourcesPath )
+			? arguments.resourcesPath
+			: listToArray( arguments.resourcesPath, ",", true );
+
+		var knownPaths = getTestResourcePathConfigured()
+			? getTestResourcePath().listToArray( ",", true )
+			: [];
+
+		for( var newPath in newPaths ) {
+			if( !isSimpleValue( newPath ) || !len( trim( newPath ) ) || knownPaths.findNoCase( trim( newPath ) ) > 0 ) {
+				continue;
+			}
+			knownPaths.append( trim( newPath ) );
+		}
+
+		variables.testResourcePath = knownPaths.toList( "," );
+		variables.testResourcePathConfigured = true;
+		return this;
+	}
+
+	/**
+	 * Sets test-only compiler classpath JARs or directories containing JARs.
+	 *
+	 * The test classpath is additive to the main classpath: tests always see the
+	 * main class output and the runtime dependencies as well.
+	 *
+	 * @classPath A JAR, JAR directory, comma-delimited value, or array of paths.
+	 * @returns The current DSL instance.
+	 */
+	function withTestClassPath( required any classPath ) {
+		variables.testClassPaths = expandClassPaths( arguments.classPath );
+		variables.testClassPathConfigured = true;
+		return this;
+	}
+
+	/**
+	 * Sets the resolved test-only classpath entries.
+	 *
+	 * @testClassPaths The resolved test classpath entries.
+	 * @returns The current DSL instance.
+	 */
+	function setTestClassPaths( required array testClassPaths ) {
+		variables.testClassPaths = arguments.testClassPaths;
+		variables.testClassPathConfigured = true;
+		return this;
+	}
+
+	/**
+	 * Resolves the test-only classpath entries.
+	 *
+	 * When nothing was configured the convention default, `dist/test-dependencies`,
+	 * is used: that is where the maven endpoint installs devDependencies. The test
+	 * classpath is additive to the main classpath at compile time.
+	 *
+	 * @returns Array of resolved test classpath entries.
+	 */
+	function getTestClassPaths() {
+		if( !variables.testClassPathConfigured ) {
+			variables.testClassPaths = expandClassPaths( "dist/test-dependencies" );
+			variables.testClassPathConfigured = true;
+		}
+		return variables.testClassPaths;
+	}
+
+	/**
+	 * Resolves the configured test source paths, falling back to the derived
+	 * test source directory.
+	 *
+	 * @returns Array of test source paths, which may contain globs.
+	 */
+	function getTestSourcePaths() {
+		if( arrayLen( variables.testSourcePaths ) && !( arrayLen( variables.testSourcePaths ) == 1 && !len( trim( variables.testSourcePaths[1] & "" ) ) ) ) {
+			return variables.testSourcePaths;
+		}
+		return [ getTestSourceDirectory() ];
+	}
+
+	/**
+	 * Resolves the test source directory, deriving it from the main source path
+	 * when the caller never overrode it: the `main` path segment is swapped for
+	 * `test`, the same swap Gradle and Maven use. When the main source path has no
+	 * `main` segment (a flat `src` layout, for example) the configured default is
+	 * used, and the caller overrides `testSourcePath` explicitly.
+	 *
+	 * @returns The test source directory.
+	 */
+	function getTestSourceDirectory() {
+		if( variables.testSourceConfigured ) {
+			return variables.testSourceDirectory;
+		}
+		var derived = deriveTestPath( getPrimarySourcePath() );
+		return len( derived ) ? derived : variables.testSourceDirectory;
+	}
+
+	/**
+	 * Resolves the test class output directory, deriving it from the main class
+	 * output directory the same way the test source directory is derived.
+	 *
+	 * @returns The test class output directory.
+	 */
+	function getTestClassOutputDirectory() {
+		if( variables.testClassesConfigured ) {
+			return variables.testClassOutputDirectory;
+		}
+		var derived = deriveTestPath( getClassOutputDirectory() );
+		return len( derived ) ? derived : variables.testClassOutputDirectory;
+	}
+
+	/**
+	 * Returns the resolved test resource roots in the order they were supplied.
+	 *
+	 * @returns Array of absolute test resource directory paths.
+	 */
+	function getTestResourcePaths() {
+		var resourceRoots = [];
+		for( var resourcePath in getTestResourcePath().listToArray( ",", true ) ) {
+			if( !len( trim( resourcePath ) ) ) {
+				continue;
+			}
+			var resolvedPath = fileSystemutil.resolvePath( trim( resourcePath ), getProjectRoot() );
+			if( resourceRoots.findNoCase( resolvedPath ) == 0 ) {
+				resourceRoots.append( resolvedPath );
+			}
+		}
+		return resourceRoots;
+	}
+
+	/**
+	 * Returns the first configured main source path, or the source directory
+	 * convention when none was supplied.
+	 *
+	 * @returns A main source path.
+	 */
+	private string function getPrimarySourcePath() {
+		var paths = getSourcePaths();
+		if( arrayLen( paths ) && isSimpleValue( paths[1] ) && len( trim( paths[1] & "" ) ) ) {
+			return paths[1];
+		}
+		return getSourceDirectory();
+	}
+
+	/**
+	 * Swaps the `main` path segment of a convention path for `test`. When there is
+	 * no `main` segment, the configured default for that path is returned instead.
+	 *
+	 * @path The main convention path to derive from.
+	 * @returns The derived test path.
+	 */
+	private string function deriveTestPath( required string path ) {
+		var normalized = fileSystemutil.normalizeSlashes( arguments.path );
+		var derived = reReplaceNoCase( normalized, "(^|/)main(/|$)", "\1test\2" );
+		if( derived == normalized ) {
+			return "";
+		}
+		return derived;
+	}
+
+	/**
+	 * Enables or disables compiling the test source set in addition to the main
+	 * sources. Main sources are always compiled; tests are additive.
+	 *
+	 * @compileTests True to also compile the test source set.
+	 * @returns The current DSL instance.
+	 */
+	function setCompileTests( boolean compileTests=true ) {
+		variables.compileTests = arguments.compileTests;
 		return this;
 	}
 
@@ -583,6 +867,11 @@ component accessors=true {
 			"sourcePaths"          : getSourcePaths(),
 			"classOutputDirectory" : fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() ),
 			"classPaths"           : getClassPaths(),
+			"compileTests"         : getCompileTests(),
+			"testSourcePaths"      : getTestSourcePaths(),
+			"testClassOutputDirectory" : fileSystemutil.resolvePath( getTestClassOutputDirectory(), getProjectRoot() ),
+			"testClassPaths"       : getTestClassPaths(),
+			"testResourcePaths"    : getTestResourcePaths(),
 			"compileOptions"       : getCompileOptionsString(),
 			"compileOptionsParams" : getCompileOptionsParams(),
 			"encoding"             : getEncode(),
@@ -649,6 +938,11 @@ component accessors=true {
 			"resourcePath"          : getResourcePaths().toList( "," ),
 			"resourcePaths"         : getResourcePaths(),
 			"classPaths"            : getClassPaths(),
+			"testsCompiled"         : getCompileTests(),
+			"testSourcePaths"       : getCompileTests() ? getTestSourcePaths() : [],
+			"testClassOutputDirectory" : fileSystemutil.resolvePath( getTestClassOutputDirectory(), getProjectRoot() ),
+			"testResourcePaths"     : getTestResourcePaths(),
+			"testClassPaths"        : getTestClassPaths(),
 			"fatJarPaths"           : getFatJarPaths(),
 			"fatJarDependencyCount" : getFatJarPaths().len(),
 			"fatJarRequested"       : getFatJarRequested(),
@@ -665,61 +959,152 @@ component accessors=true {
     }
 
 	/**
-	 * Compiles the resolved Java source paths with javac.
+	 * Compiles the resolved Java source paths with javac, and the test source set
+	 * as well when it was requested with `--tests` / `compileTests`.
 	 *
-	 * @returns Nothing. Compiled classes are written to the configured output directory.
+	 * Main sources are always compiled; tests are additive.
+	 *
+	 * @returns Nothing. Compiled classes are written to the configured output directories.
 	 */
 	function compileCode() {
 
-		/* if( directoryExists( getClassOutputDirectory() ) ){
-			directoryDelete( getClassOutputDirectory(), true )
-		} */
-
 		//shell.printString( " glob-> start... " );
         //job.addLog( " glob-> start... " );
-		var currentProjectRoot = getProjectRoot();
-
-		var globber = wirebox.getInstance( 'globber' );
-		var tempSrcFileName = tempDir & 'temp#createUUID()#.txt';
-		/* var tempSrcFileName = currentProjectRoot & 'temp#createUUID()#.txt'; */
-		//job.addLog( " " & serialize( getSourcePaths() ) & " " );
 
 		// use only one variable
 		if( len( getSourcePaths() ) EQ 1 and getSourcePaths()[1] == "" ) {
 			setSourcePaths( [getSourceDirectory()] );
 		}
 
-		setSourcePaths( getSourcePaths().map( function( p ) {
-			var currentPath = fileSystemutil.resolvePath( arguments.p, getProjectRoot() );
-            // check the path if there is one * then assume its globbing and leave it
-            // if its not a file then add the **.jav
-
-			if( Find( "*", currentPath ) ) {
-				return currentPath;
-
-			} else if( directoryExists( currentPath ) ) {
-				currentPath &= "**.java";
-				return currentPath;
-
-			}
-
-			return currentPath;
-
-		} ) );
+		setSourcePaths( expandSourcePaths( getSourcePaths() ) );
 
 		job.addLog(
 			"Compiling source files from: #getSourcePaths().map( function( sourcePath ) {
 				return replaceNoCase( sourcePath, getProjectRoot(), "" );
 			} ).toList( ', ' )#"
 		);
-		try{
+		compileSourceSet(
+			getSourcePaths(),
+			fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() ),
+			getClassPaths(),
+			"Java compilation"
+		);
 
-			writeTempSourceFile( tempSrcFileName );
+		if( getCompileTests() ) {
+			// No nested job here: a second open job left behind when the test pass fails
+			// kills a non-interactive run before the error can be reported.
+			job.addLog( 'Compiling Java tests.' );
+			compileTestCode();
+		}
+
+	}
+
+	/**
+	 * Compiles the test source set with javac.
+	 *
+	 * The test classpath is the main class output, the main classpath, and the test
+	 * classpath, mirroring Gradle: tests see the main output and every main
+	 * dependency as well as the test-only ones. The pass is skipped with a log
+	 * message (never an error) when no test sources exist.
+	 *
+	 * @returns Nothing. Compiled test classes are written to the test class output directory.
+	 */
+	function compileTestCode() {
+		var testSourcePaths = expandSourcePaths( getTestSourcePaths() );
+
+		if( !hasTestSources( testSourcePaths ) ) {
+			job.addLog( "Skipping test compilation: no test sources found at #getTestSourceDirectory()#." );
+			return;
+		}
+
+		job.addLog(
+			"Compiling test source files from: #testSourcePaths.map( function( sourcePath ) {
+				return replaceNoCase( sourcePath, getProjectRoot(), "" );
+			} ).toList( ', ' )#"
+		);
+
+		var testClassPathEntries = [];
+		// A trailing separator on a classpath entry escapes the closing quote of the
+		// quoted argument and swallows the next argument, so strip them.
+		testClassPathEntries.append( reReplace( fileSystemutil.resolvePath( getClassOutputDirectory(), getProjectRoot() ), "[\\/]+$", "" ) );
+		testClassPathEntries.append( getClassPaths(), true );
+		testClassPathEntries.append( getTestClassPaths(), true );
+
+		compileSourceSet(
+			testSourcePaths,
+			fileSystemutil.resolvePath( getTestClassOutputDirectory(), getProjectRoot() ),
+			testClassPathEntries,
+			"Test compilation"
+		);
+	}
+
+	/**
+	 * Resolves source paths against the project root and expands any directory into
+	 * a recursive `**.java` glob, leaving existing globs and files alone.
+	 *
+	 * @sourcePaths The source paths to expand.
+	 * @returns The expanded source paths.
+	 */
+	private array function expandSourcePaths( required array sourcePaths ) {
+		return arguments.sourcePaths.map( function( p ) {
+			var currentPath = fileSystemutil.resolvePath( arguments.p, getProjectRoot() );
+			// A path that already contains a `*` is a glob, so leave it alone.
+			// A directory gets a recursive source glob.
+			if( Find( "*", currentPath ) ) {
+				return currentPath;
+			} else if( directoryExists( currentPath ) ) {
+				return currentPath & "**.java";
+			}
+			return currentPath;
+		} );
+	}
+
+	/**
+	 * Checks whether any of the supplied test source paths (or globs) can match
+	 * a Java source file.
+	 *
+	 * @sourcePaths The expanded test source paths.
+	 * @returns True when the test source set has something to compile.
+	 */
+	private boolean function hasTestSources( required array sourcePaths ) {
+		for( var sourcePath in arguments.sourcePaths ) {
+			if( !isSimpleValue( sourcePath ) || !len( trim( sourcePath ) ) ) {
+				continue;
+			}
+			// A glob is handed to the globber, which returns nothing when it matches nothing.
+			if( find( "*", sourcePath ) ) {
+				return true;
+			}
+			if( fileExists( sourcePath ) || directoryExists( sourcePath ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Compiles one source set into one output directory with javac.
+	 *
+	 * @sourcePaths The expanded source paths to compile.
+	 * @classOutputDirectory The absolute directory to write class files to.
+	 * @classPathEntries The resolved classpath entries for this source set.
+	 * @operation The operation name used in failure messages.
+	 * @returns Nothing.
+	 */
+	private function compileSourceSet(
+		required array sourcePaths,
+		required string classOutputDirectory,
+		required array classPathEntries,
+		required string operation
+	) {
+		var tempSrcFileName = tempDir & 'temp#createUUID()#.txt';
+		try {
+			writeTempSourceFile( tempSrcFileName, arguments.sourcePaths );
 
 			var classPathString = "";
-			if ( len(getClassPaths()) ) {
+			if ( len( arguments.classPathEntries ) ) {
 				var cpSeparator = fileSystemUtil.isWindows() ? ';' : ':';
-				classPathString = '-cp "#getClassPaths().toList( cpSeparator )#"';
+				classPathString = '-cp "#arguments.classPathEntries.toList( cpSeparator )#"';
 			}
 
 			var additionalOptions = "";
@@ -733,7 +1118,7 @@ component accessors=true {
 				additionalOptions &= " -verbose";
 			}
 			var classOutputDirectory = reReplace(
-				fileSystemutil.normalizeSlashes( variables.classOutputDirectory ),
+				fileSystemutil.normalizeSlashes( arguments.classOutputDirectory ),
 				"/+$",
 				""
 			);
@@ -745,30 +1130,51 @@ component accessors=true {
 			if( getVerbose() ) {
 				job.addLog( javacCommand );
 			}
-			runCompileCommand( javacCommand, "Java compilation" );
+			runCompileCommand( javacCommand, arguments.operation );
 
-		} catch( any e ) {
-			job.addLog( "Compilation failed: #e.message#" );
-			if( len( e.detail ?: "" ) ) {
-				job.addLog( e.detail );
-			}
-			var exceptionInfo = e.extendedInfo ?: "";
-			if( isJSON( exceptionInfo ) ) {
-				exceptionInfo = deserializeJSON( exceptionInfo );
-			}
-			if( isStruct( exceptionInfo ) ) {
-				if( exceptionInfo.keyExists( "commandOutput" ) && len( exceptionInfo.commandOutput ) ) {
-					job.addLog( exceptionInfo.commandOutput );
-				}
-			}
-			throw( message="Compilation failed: #e.message#", detail=e.detail, type="commandException" );
 		} finally {
 			if ( FileExists( tempSrcFileName ) ) {
 				fileDelete( tempSrcFileName );
 			}
+		}
+	}
 
+	/**
+	 * Removes generated build output so the next build starts fresh.
+	 *
+	 * The main and test class output trees are removed, along with the JAR output
+	 * for the current version in the libs directory. Dependency directories are
+	 * left alone so a clean does not force a re-download.
+	 *
+	 * @returns A struct with the absolute paths that were removed.
+	 */
+	struct function clean() {
+		// clean() is callable on its own, before any compile run, so it owns its job.
+		var removed = [];
+
+		for( var outputDirectory in [ getClassOutputDirectory(), getTestClassOutputDirectory() ] ) {
+			var resolvedDirectory = fileSystemutil.resolvePath( outputDirectory, getProjectRoot() );
+			if( !directoryExists( resolvedDirectory ) ) {
+				continue;
+			}
+			directoryDelete( resolvedDirectory, true );
+			removed.append( resolvedDirectory );
 		}
 
+		var libsDirectory = fileSystemutil.resolvePath( getLibsDir(), getProjectRoot() );
+		var jarFileNames = [ getJarNameString(), getFatJarNameString(), getJarNameFromPackage( getProjectRoot() ) ];
+		for( var jarFileName in jarFileNames ) {
+			if( !isSimpleValue( jarFileName ) || !len( trim( jarFileName ) ) ) {
+				continue;
+			}
+			var jarPath = fileSystemutil.resolvePath( trim( jarFileName ), libsDirectory );
+			if( fileExists( jarPath ) ) {
+				fileDelete( jarPath );
+				removed.append( jarPath );
+			}
+		}
+
+		return { "removed" : removed };
 	}
 
 	/**
@@ -829,6 +1235,22 @@ component accessors=true {
 		}
 		if( isArray( input.classPaths ?: "" ) ) {
 			setClassPaths( input.classPaths );
+		}
+		if( structKeyExists( input, "compileTests" ) ) {
+			setCompileTests( isBoolean( input.compileTests ) ? input.compileTests : false );
+		}
+		if( isArray( input.testSourcePaths ?: "" ) && input.testSourcePaths.len() ) {
+			fromTestSource( input.testSourcePaths );
+		}
+		if( isSimpleValue( input.testClassOutputDirectory ?: "" ) && input.testClassOutputDirectory.len() ) {
+			toTestClasses( input.testClassOutputDirectory );
+		}
+		if( isArray( input.testClassPaths ?: "" ) ) {
+			variables.testClassPaths = input.testClassPaths;
+			variables.testClassPathConfigured = true;
+		}
+		if( isArray( input.testResourcePaths ?: "" ) && input.testResourcePaths.len() ) {
+			withTestResources( input.testResourcePaths );
 		}
 		if( isSimpleValue( input.encoding ?: "" ) ) {
 			setEncode( input.encoding );
@@ -2473,6 +2895,14 @@ component accessors=true {
 		return '"#arguments.executable#" ' & arguments.argumentsString;
 	}
 
+	/**
+	 * Runs a native command through the shell's `run` command and reports failures
+	 * with the operation that failed.
+	 *
+	 * @commandLine The full command line to execute.
+	 * @operation The human-readable operation name used in the error.
+	 * @returns The captured command output.
+	 */
 	private any function runCompileCommand(
 		required string commandLine,
 		required string operation
@@ -2496,11 +2926,13 @@ component accessors=true {
 					job.addLog( exceptionInfo.commandOutput );
 				}
 			}
+			// The javac output has already been logged into the job above. Do not carry
+			// extendedInfo up: it still holds that same commandOutput, and the shell would
+			// print it a second time once the job has finalized.
 			throw(
 				message="#arguments.operation# failed: #e.message#",
 				detail=e.detail,
-				type="commandException",
-				extendedInfo=e.extendedInfo ?: ""
+				type="commandException"
 			);
 		}
 	}

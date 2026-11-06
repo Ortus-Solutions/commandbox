@@ -6,6 +6,9 @@
  */
 component {
 
+	/**
+	 * Runs every function annotated `@test` and prints a per-test result.
+	 */
 	function run() {
 		this.$bx.meta.functions
 			.filter( function( functionMetadata ) {
@@ -146,6 +149,13 @@ component {
 		print.greenLine( "Run missing jar test passed." );
 	}
 
+	/**
+	 * Compiles the fixture, then runs `java run` against it.
+	 *
+	 * @struct The struct.
+	 * @params The parameters to pass to the command.
+	 * @returns The output of the java process.
+	 */
 	private string function runJavaRun( struct params={} ) {
 		// Compile first - java run does not compile
 		command( "java compile" )
@@ -159,11 +169,20 @@ component {
 			.run( returnOutput=true );
 	}
 
+	/**
+	 * Deletes the fixture's build output so each test starts from a clean tree.
+	 */
 	private void function cleanFixture() {
 		var path = resolvePath( "run-fixture/build" );
 		if( directoryExists( path ) ) directoryDelete( path, true );
 	}
 
+	/**
+	 * Asserts that a condition is true.
+	 *
+	 * @condition The condition to check.
+	 * @message The failure message.
+	 */
 	private void function assertTrue( required boolean condition, required string message ) {
 		if( !arguments.condition ) error( arguments.message );
 	}

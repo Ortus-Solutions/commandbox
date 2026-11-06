@@ -53,10 +53,17 @@ component
 		boolean verbose                = false
 	){
 		var job = wirebox.getInstance( "interactiveJob" );
-		var projectMaven = packageService.readPackageDescriptor( currentWorkingDirectory ).maven;
+		var projectBoxJSON = packageService.readPackageDescriptor( currentWorkingDirectory );
+		var projectMaven = projectBoxJSON.maven;
 		var artifactParts = getArtifactParts( package );
 		artifactParts.flags.installMode = resolveInstallMode( artifactParts.flags.installMode, projectMaven.installMode ?: "" );
-		var installDirectory = resolveInstallDirectory( projectMaven.installDirectory ?: "" );
+		// A dev dependency installs into its own directory so it can never be swept
+		// into a fatJar, and so uninstall can find it again. An explicit installPaths
+		// entry in the container project still wins, because PackageService checks
+		// that before it falls back to the directory recorded in this descriptor.
+		var installDirectory = isDevDependency( projectBoxJSON, artifactParts )
+			? resolveDevInstallDirectory( projectMaven.devInstallDirectory ?: "" )
+			: resolveInstallDirectory( projectMaven.installDirectory ?: "" );
 
 		// Build the registered repo list by layering three sources, with later sources overwriting
 		// earlier ones on key collision (a project box.json can redefine a global alias, and a global
@@ -773,6 +780,43 @@ component
 		}
 
 		return configService.getSetting( "endpoints.maven.installDirectory", "" );
+	}
+
+	/**
+	 * Resolves the dev dependency install directory from project settings or global configuration.
+	 *
+	 * Dev dependencies get their own directory so a test-only JAR can never be mistaken
+	 * for a runtime one and end up in a fatJar.
+	 *
+	 * @projectDirectory The dev install directory configured in the current project's box.json.
+	 */
+	private string function resolveDevInstallDirectory( required string projectDirectory ) {
+		if ( arguments.projectDirectory.len() ) {
+			return arguments.projectDirectory;
+		}
+
+		return configService.getSetting( "endpoints.maven.devInstallDirectory", "dist/test-dependencies" );
+	}
+
+	/**
+	 * Is the artifact being resolved declared as a dev dependency in the project box.json?
+	 *
+	 * The dependency key is the artifact's `groupId:artifactId` slug, which is exactly
+	 * how the maven endpoint names its own dependencies.
+	 *
+	 * @projectBoxJSON The container project's raw box.json descriptor.
+	 * @artifactParts The parsed artifact parts for the package being resolved.
+	 */
+	private boolean function isDevDependency( required struct projectBoxJSON, required struct artifactParts ) {
+		var devDependencies = arguments.projectBoxJSON.devDependencies ?: {};
+		if ( !isStruct( devDependencies ) ) {
+			return false;
+		}
+
+		return structKeyExists(
+			devDependencies,
+			arguments.artifactParts.groupId & ":" & arguments.artifactParts.artifactId
+		);
 	}
 
 	/**

@@ -899,6 +899,12 @@ component accessors="true" singleton {
 			// Is there an install path for this?
 			if( structKeyExists( installPaths, packageName ) ) {
 				uninstallDirectory = fileSystemUtil.resolvePath( installPaths[ packageName ], arguments.currentWorkingDirectory );
+			// A dev dependency that was never recorded in installPaths lives under the
+			// maven dev install directory, never the runtime dependency directory.
+			} else if( structKeyExists( boxJSON.devDependencies, packageName ) ) {
+				var devInstallDirectory = boxJSON.maven.devInstallDirectory ?: configService.getSetting( "endpoints.maven.devInstallDirectory", "dist/test-dependencies" );
+				uninstallDirectory = fileSystemUtil.resolvePath( devInstallDirectory, arguments.currentWorkingDirectory )
+					& "/" & replace( packageName, ":", "-" );
 			}
 		}
 

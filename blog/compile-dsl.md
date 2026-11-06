@@ -72,7 +72,7 @@ print.line( result.jarPath ); // build/libs/hello.jar
 Shell equivalent:
 
 ```js
-java compile --jar jarName=hello.jar
+java compile --jar jarFile=hello.jar
 ```
 
 You get a JAR at `build/libs/hello.jar` (and your compiled classes in `build/classes/java/main`).
@@ -101,7 +101,7 @@ compile()
 	.libsDir( "dist" )
 	.compileOptions( {
 		"release"    : 8,
-		"debug"      : [ "lines", "source" ],
+		"debug"      : [ "lines", "sourcePath" ],
 		"encoding"   : "UTF-8",
 		"parameters" : true
 	} )
@@ -112,7 +112,7 @@ compile()
 Shell equivalent:
 
 ```js
-java compile source=src/custom/java classes=target/classes libsDir=dist --jar jarName=myapp.jar compileOptions:release=8 compileOptions:debug=lines,source compileOptions:encoding=UTF-8 compileOptions:parameters=true
+java compile sourcePath=src/custom/java classesDirectory=target/classes libsDirectory=dist --jar jarFile=myapp.jar compileOptions:release=8 compileOptions:debug=lines,source compileOptions:encoding=UTF-8 compileOptions:parameters=true
 ```
 
 Output:
@@ -159,7 +159,7 @@ compile()
 Shell equivalent:
 
 ```js
-java compile --jar jarName=example.jar manifest:Main-Class=example.App manifest:Implementation-Version=1.2.3 manifest:Implementation-Title="Example Application"
+java compile --jar jarFile=example.jar manifest:Main-Class=example.App manifest:Implementation-Version=1.2.3 manifest:Implementation-Title="Example Application"
 ```
 
 Output — what ends up inside the JAR:
@@ -192,7 +192,7 @@ compile()
 Shell equivalent:
 
 ```js
-java compile classPath=libs --javaDocs --jar jarName=example.jar
+java compile classPath=libs --javaDocs --jar jarFile=example.jar
 ```
 
 You get your JAR at `build/libs/example.jar` and Javadocs in `build/docs/javadoc`.
@@ -230,7 +230,7 @@ compile()
 Shell equivalent:
 
 ```js
-java compile classPath=libs/dependencies --fatJar fatJarName=app-all.jar fatJarJars=libs/dependencies
+java compile classPath=libs/dependencies --fatJar fatJarFile=app-all.jar fatJarPaths=libs/dependencies
 ```
 
 Output — the project JAR plus the merged fat JAR, side by side:
@@ -297,11 +297,11 @@ The `java` object in box.json controls *everything* the compile DSL does. Point 
 ```json
 {
     "java" : {
-        "source"         : "src/custom/java",
-        "classes"        : "build/classes",
-        "libsDir"        : "dist",
+        "sourcePath"         : "src/custom/java",
+        "classesDirectory"        : "build/classes",
+        "libsDirectory"        : "dist",
         "jar"            : true,
-        "jarName"        : "my-app.jar",
+        "jarFile"        : "my-app.jar",
         "compileOptions" : { "release" : 8 },
         "manifest"       : { "Implementation-Title" : "My App" }
     }

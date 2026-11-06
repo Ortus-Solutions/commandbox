@@ -1,5 +1,11 @@
 component {
 
+	/**
+	 * Runs every function annotated `@test` and prints a per-test result.
+	 *
+	 * @boolean The boolean.
+	 * @verbose Show verbose output.
+	 */
 	function run( boolean verbose=false ) {
 		this.$bx.meta.functions
 			.filter( function( functionMetadata ) {
@@ -1383,12 +1389,12 @@ component {
 	}
 
 	/**
-	 * fatJarJars accepts a directory the same way classPath does, including a mix
+	 * fatJarPaths accepts a directory the same way classPath does, including a mix
 	 * of directories and explicit JAR paths.
 	 *
 	 * @test
 	 */
-	function fatJarJarsDirectory( boolean verbose=false ) {
+	function fatJarPathsDirectory( boolean verbose=false ) {
 		var dependencyDirectory = resolvePath( "libs/fat-jar-dir-deps" );
 		var emptyDirectory = resolvePath( "libs/fat-jar-dir-empty" );
 		var standaloneJar = resolvePath( "libs/fat-jar-dir-standalone.jar" );
@@ -1474,7 +1480,7 @@ component {
 		}
 		createManyDependencyJar( resolvePath( "fat-jar-default/source-other" ), otherJar, 99 );
 
-		// No fatJarJars supplied: the compile class path is the dependency set
+		// No fatJarPaths supplied: the compile class path is the dependency set
 		var result = compile()
 			.setVerbose( arguments.verbose )
 			.withClassPath( dependencyDirectory )
@@ -1512,7 +1518,7 @@ component {
 	}
 
 	/**
-	 * java.resources accepts multiple roots: repeated withResources() calls and
+	 * java.resourcesDirectory accepts multiple roots: repeated withResources() calls and
 	 * comma-delimited or array values accumulate, and a later root wins shared
 	 * entries. Both the thin and the fat JAR must contain every root.
 	 *
@@ -1602,6 +1608,12 @@ component {
 		print.greenLine( "Compile interception scripts test passed." );
 	}
 
+	/**
+	 * Runs the classpath regression tests together. Not annotated `@test`, so it only runs when called.
+	 *
+	 * @boolean The boolean.
+	 * @verbose Show verbose output.
+	 */
 	function classPathRegressions( boolean verbose = false ) {
 		distClassPaths( arguments.verbose );
 		globberPatternConsistency();
@@ -1617,8 +1629,8 @@ component {
 			"slug" : "dist-paths",
 			"version" : "1.0.0",
 			"java" : {
-				"classes" : "dist/classes/",
-				"libsDir" : "dist/libs",
+				"classesDirectory" : "dist/classes/",
+				"libsDirectory" : "dist/libs",
 				"jar" : true,
 				"fatJar" : true
 			}
@@ -1898,24 +1910,46 @@ component {
 		return entries;
 	}
 
+	/**
+	 * Asserts that a file exists.
+	 *
+	 * @filePath The file path to check.
+	 */
 	private function assertFileExists( required string filePath ) {
 		if( !fileExists( arguments.filePath ) ) {
 			error( "Expected file was not created: #arguments.filePath#" );
 		}
 	}
 
+	/**
+	 * Asserts that a file does not exist.
+	 *
+	 * @filePath The file path to check.
+	 */
 	private function assertFileMissing( required string filePath ) {
 		if( fileExists( arguments.filePath ) ) {
 			error( "Expected file to be missing: #arguments.filePath#" );
 		}
 	}
 
+	/**
+	 * Asserts that two values are equal.
+	 *
+	 * @expected The expected value.
+	 * @actual The actual value.
+	 */
 	private function assertEquals( required expected, required actual ) {
 		if( arguments.expected != arguments.actual ) {
 			error( "Expected [#arguments.expected#], received [#arguments.actual#]." );
 		}
 	}
 
+	/**
+	 * Asserts that a struct contains every expected key.
+	 *
+	 * @value The value to check.
+	 * @keys The expected key names.
+	 */
 	private function assertStructKeys( required struct value, required array keys ) {
 		for( var key in arguments.keys ) {
 			if( !arguments.value.keyExists( key ) ) {
@@ -1924,6 +1958,12 @@ component {
 		}
 	}
 
+	/**
+	 * Asserts that a JAR contains an entry.
+	 *
+	 * @jarFile The JAR to inspect.
+	 * @entryName The entry inside the JAR.
+	 */
 	private function assertJarEntryExists( required string jarFile, required string entryName ) {
 		var jar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarFile );
 
@@ -1936,6 +1976,12 @@ component {
 		}
 	}
 
+	/**
+	 * Asserts that a JAR does not contain an entry.
+	 *
+	 * @jarFile The JAR to inspect.
+	 * @entryName The entry inside the JAR.
+	 */
 	private function assertJarEntryMissing( required string jarFile, required string entryName ) {
 		var jar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarFile );
 
@@ -1948,6 +1994,13 @@ component {
 		}
 	}
 
+	/**
+	 * Reads one entry out of a JAR as trimmed text.
+	 *
+	 * @jarFile The JAR to inspect.
+	 * @entryName The entry inside the JAR.
+	 * @returns The entry content.
+	 */
 	private function readJarEntry( required string jarFile, required string entryName ) {
 		var jar = createObject( "java", "java.util.jar.JarFile" ).init( arguments.jarFile );
 
@@ -1967,6 +2020,15 @@ component {
 		}
 	}
 
+	/**
+	 * Builds a dependency JAR containing a META-INF/services descriptor.
+	 *
+	 * @directory The directory to write into.
+	 * @jarFile The JAR to inspect.
+	 * @provider The service provider class name.
+	 * @string The string.
+	 * @signatureFile Optional signature file to add.
+	 */
 	private function createServiceDependencyJar(
 		required string directory,
 		required string jarFile,
@@ -1994,6 +2056,13 @@ component {
 		fileMove( zipFile, arguments.jarFile );
 	}
 
+	/**
+	 * Builds a dependency JAR containing a plain resource.
+	 *
+	 * @directory The directory to write into.
+	 * @jarFile The JAR to inspect.
+	 * @resourceContents The resource content to write.
+	 */
 	private function createResourceDependencyJar(
 		required string directory,
 		required string jarFile,
@@ -2122,6 +2191,13 @@ component {
 		fileMove( zipFile, arguments.jarFile );
 	}
 
+	/**
+	 * Asserts a manifest attribute in a JAR.
+	 *
+	 * @jarFile The JAR to inspect.
+	 * @attributeName The manifest attribute name.
+	 * @expectedValue The expected attribute value.
+	 */
 	private function assertJarManifestValue(
 		required string jarFile,
 		required string attributeName,
@@ -2137,6 +2213,12 @@ component {
 		}
 	}
 
+	/**
+	 * Asserts the class-file major version, which proves the compile release.
+	 *
+	 * @classFile The compiled class file.
+	 * @expectedVersion The expected major version.
+	 */
 	private function assertClassMajorVersion( required string classFile, required numeric expectedVersion ) {
 		var input = createObject( "java", "java.io.DataInputStream" ).init(
 			createObject( "java", "java.io.FileInputStream" ).init( arguments.classFile )
@@ -2151,6 +2233,13 @@ component {
 		}
 	}
 
+	/**
+	 * Asserts the compression method of a JAR entry.
+	 *
+	 * @jarFile The JAR to inspect.
+	 * @entryName The entry inside the JAR.
+	 * @expectedMethod The expected compression method.
+	 */
 	private function assertJarEntryCompression(
 		required string jarFile,
 		required string entryName,

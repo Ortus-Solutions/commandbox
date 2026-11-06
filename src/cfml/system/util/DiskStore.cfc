@@ -82,7 +82,12 @@ component implements="wirebox.system.cache.store.IObjectStore" {
 	 * Clear all elements of the store
 	 */
 	public void function clearAll() {
-		directoryDelete( instance.directoryPath, true );
+		try {
+			directoryDelete( instance.directoryPath, true );
+		} catch( any e ) {
+			// Another process can be writing to the directory mid-delete and leave it behind. Nothing more we can do here.
+		}
+
 		server.memoryCache = {};
 
 		try {

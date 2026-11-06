@@ -1,0 +1,17 @@
+{
+    "name":"Java Test No Runner Fixture",
+    "slug":"java-test-norunner-fixture",
+    "version":"1.0.0",
+    "dependencies":{},
+    "devDependencies":{},
+    "installPaths":{},
+    "java":{
+        "sourcePath":"src/main/java",
+        "testSourcePath":"src/test/java",
+        "classesDirectory":"dist/classes",
+        "testClassesDirectory":"dist/test-classes",
+        "libsDirectory":"dist/libs",
+        "classPath":[],
+        "testClassPath":[]
+    }
+}

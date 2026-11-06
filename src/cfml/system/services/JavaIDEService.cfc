@@ -15,7 +15,14 @@ component singleton {
 	property name="wirebox"        inject="wirebox";
 	property name="fileSystemUtil" inject="FileSystem";
 	property name="documents"      inject="JavaIDEDocuments";
+	property name="jsonService"    inject="JSONService";
 
+	/**
+	 * Registers the built-in editor emitters. A new editor is a new class plus a
+	 * registration here, never a change to the command.
+	 *
+	 * @returns The service instance.
+	 */
 	function init() {
 		variables.emitters = structNew( "ordered" );
 		register( "vscode", "commandbox.system.util.javaide.VSCode" );
@@ -37,17 +44,26 @@ component singleton {
 	}
 
 	/**
-	 * Writes the metadata for every editor detected in the project.
+	 * Writes the metadata for every editor detected in the project, or for the
+	 * editors the caller names.
+	 *
+	 * Detecting nothing is not an error: an empty project simply has no editor
+	 * marker yet, so an empty result is returned and the caller decides what to do.
 	 *
 	 * @model The editor-neutral project model.
+	 * @ide Comma-delimited editor ids to force. Empty means "detect".
 	 * @returns Array of structs with the editor id and the files written.
 	 */
-	array function write( required struct model ) {
+	array function write( required struct model, string ide="" ) {
+		// Unknown ids are validated by the command; anything left here is a real editor.
+		var ids = requestedEditors( arguments.ide );
+
+		if( !ids.len() && !len( trim( arguments.ide ) ) ) {
+			ids = detectedEditors( arguments.model.projectRoot );
+		}
+
 		var results = [];
-		for( var id in variables.emitters ) {
-			if( !emitter( id ).detect( arguments.model.projectRoot ) ) {
-				continue;
-			}
+		for( var id in ids ) {
 			var written = [];
 			for( var specification in emitter( id ).files( arguments.model ) ) {
 				var target = fileSystemUtil.resolvePath( specification.path, arguments.model.projectRoot );
@@ -60,29 +76,72 @@ component singleton {
 				if( !directoryExists( parent ) ) {
 					directoryCreate( parent, true );
 				}
-				fileWrite(
-					target,
-					documents.render(
-						specification,
-						exists ? fileRead( target ) : "",
-						exists
-					),
-					"utf-8"
+				var document = documents.apply(
+					specification,
+					exists ? fileRead( target ) : "",
+					exists
 				);
+				// JSONService owns JSON formatting (JSON.indent, key sorting, line endings),
+				// so editor settings are written the same way box.json is.
+				if( specification.format == "json" ) {
+					jsonService.writeJSONFile( target, document );
+				} else {
+					fileWrite( target, documents.stringify( specification.format, document ), "utf-8" );
+				}
 				written.append( specification.path );
 			}
 			results.append( { "ide" : id, "files" : written } );
 		}
-		if( !results.len() ) {
-			throw(
-				type="commandException",
-				message="No editor metadata detected in #arguments.model.projectRoot#.",
-				detail="java ide-init writes metadata for VS Code (.vscode), Eclipse (.project/.classpath) and IntelliJ (.idea or an .iml)."
-			);
-		}
 		return results;
 	}
 
+	/**
+	 * Returns the ids of the emitters whose editor is in use in this project.
+	 *
+	 * @root The project root to inspect.
+	 */
+	array function detectedEditors( required string root ) {
+		var detected = [];
+		for( var id in variables.emitters ) {
+			if( emitter( id ).detect( arguments.root ) ) {
+				detected.append( id );
+			}
+		}
+		return detected;
+	}
+
+	/**
+	 * Returns the ids of every registered emitter.
+	 */
+	array function availableEditors() {
+		return variables.emitters.keyArray();
+	}
+
+	/**
+	 * Normalizes the caller's editor ids.
+	 *
+	 * @ide Comma-delimited editor ids, or an empty string.
+	 */
+	private array function requestedEditors( required string ide ) {
+		if ( !len( trim( arguments.ide ) ) ) {
+			return [];
+		}
+
+		var ids = [];
+		for ( var id in arguments.ide.listToArray( "," ) ) {
+			if ( len( trim( id ) ) && !ids.findNoCase( trim( id ) ) ) {
+				ids.append( lCase( trim( id ) ) );
+			}
+		}
+		return ids;
+	}
+
+	/**
+	 * Resolves a registered emitter, which may still be a CFC path.
+	 *
+	 * @id The emitter id.
+	 * @returns The emitter instance.
+	 */
 	private any function emitter( required string id ) {
 		var registered = variables.emitters[ arguments.id ];
 		return isSimpleValue( registered ) ? wirebox.getInstance( registered ) : registered;

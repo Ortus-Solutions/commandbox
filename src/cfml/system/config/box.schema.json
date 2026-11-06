@@ -360,6 +360,274 @@
 			},
 			"default": []
 		},
+		"maven": {
+			"title": "Maven",
+			"description": "Settings for the maven endpoint, which installs artifacts from Maven repositories",
+			"type": "object",
+			"properties": {
+				"installMode": {
+					"title": "Install Mode",
+					"description": "How a resolved artifact is laid out. A dedicated install gives each artifact its own folder; shared installs dump everything into the destination.",
+					"type": "string",
+					"enum": [
+						"",
+						"dedicated",
+						"shared"
+					],
+					"default": ""
+				},
+				"installDirectory": {
+					"title": "Install Directory",
+					"description": "Where runtime maven dependencies are installed. Relative to the project root.",
+					"type": "string",
+					"default": ""
+				},
+				"devInstallDirectory": {
+					"title": "Dev Install Directory",
+					"description": "Where devDependencies are installed. Kept separate from installDirectory so a test-only JAR can never end up in a fatJar.",
+					"type": "string",
+					"default": "dist/test-dependencies"
+				},
+				"repositories": {
+					"title": "Repositories",
+					"description": "Maven repositories by alias. Each value is a repository URL.",
+					"type": "object",
+					"additionalProperties": {
+						"type": "string"
+					},
+					"default": {}
+				}
+			}
+		},
+		"java": {
+			"title": "Java",
+			"description": "Conventions for the java compile, clean, test and run commands",
+			"type": "object",
+			"properties": {
+				"sourcePath": {
+					"title": "Source Path",
+					"description": "Main Java source directory, file, glob, or comma-delimited list",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": "src/main/java"
+				},
+				"testSourcePath": {
+					"title": "Test Source Path",
+					"description": "Test Java source directory, file, glob, or comma-delimited list. Defaults to sourcePath with the main path segment swapped for test.",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": "src/test/java"
+				},
+				"classesDirectory": {
+					"title": "Classes Directory",
+					"description": "Compiled class output directory",
+					"type": "string",
+					"default": "build/classes/java/main"
+				},
+				"testClassesDirectory": {
+					"title": "Test Classes Directory",
+					"description": "Compiled test class output directory. Defaults to classesDirectory with the main path segment swapped for test.",
+					"type": "string",
+					"default": "build/classes/java/test"
+				},
+				"resourcesDirectory": {
+					"title": "Resources Directory",
+					"description": "Resource directory or directories added to the JAR",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": "src/main/resources"
+				},
+				"testResourcesDirectory": {
+					"title": "Test Resources Directory",
+					"description": "Test resource directory or directories added to the test classpath",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": "src/test/resources"
+				},
+				"libsDirectory": {
+					"title": "Libs Directory",
+					"description": "Directory generated JAR files are written to",
+					"type": "string",
+					"default": "build/libs"
+				},
+				"javaDocsDirectory": {
+					"title": "Javadocs Directory",
+					"description": "Javadoc output directory",
+					"type": "string",
+					"default": "build/docs/javadoc"
+				},
+				"classPath": {
+					"title": "Class Path",
+					"description": "JAR, JAR directory, glob, or comma-delimited list added to the compile classpath. Defaults to the maven install directory.",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": []
+				},
+				"testClassPath": {
+					"title": "Test Class Path",
+					"description": "JAR, JAR directory, glob, or comma-delimited list added to the test compile classpath. Additive to classPath. Defaults to the maven dev install directory.",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": []
+				},
+				"jar": {
+					"title": "Create JAR",
+					"description": "Create a JAR when compiling",
+					"type": "boolean",
+					"default": false
+				},
+				"jarFile": {
+					"title": "JAR File",
+					"description": "JAR filename. Derived from the package slug and version when empty.",
+					"type": "string",
+					"default": ""
+				},
+				"fatJar": {
+					"title": "Create Fat JAR",
+					"description": "Merge the classpath JARs into a single JAR when compiling",
+					"type": "boolean",
+					"default": false
+				},
+				"fatJarFile": {
+					"title": "Fat JAR File",
+					"description": "Fat JAR filename. Derived from the package slug and version when empty.",
+					"type": "string",
+					"default": ""
+				},
+				"fatJarPaths": {
+					"title": "Fat JAR Paths",
+					"description": "Dependency JARs or directories of JARs merged into the fat JAR",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": []
+				},
+				"compileOptions": {
+					"title": "Compile Options",
+					"description": "Javac options, keyed by option name. For example release, source, target, encoding, lint.",
+					"type": "object",
+					"default": {}
+				},
+				"jarOptions": {
+					"title": "JAR Options",
+					"description": "JAR tool options, keyed by option name. For example mainClass, compress, noManifest.",
+					"type": "object",
+					"default": {}
+				},
+				"fatJarOptions": {
+					"title": "Fat JAR Options",
+					"description": "How duplicate entries, signatures, service descriptors, and the Log4j 2 plugin cache are handled when merging",
+					"type": "object",
+					"properties": {
+						"mergeServiceDescriptors": {
+							"description": "Merge META-INF/services entries instead of letting one win",
+							"type": "boolean",
+							"default": true
+						},
+						"excludeSignatures": {
+							"description": "Strip signature files that would be invalid after merging",
+							"type": "boolean",
+							"default": true
+						},
+						"duplicatePolicy": {
+							"description": "Which copy of a duplicate entry wins",
+							"type": "string",
+							"enum": [
+								"last",
+								"first",
+								"error"
+							],
+							"default": "last"
+						},
+						"mergeLog4jPluginCaches": {
+							"description": "Merge the Log4j 2 plugin cache so no plugin set is lost at runtime",
+							"type": "boolean",
+							"default": false
+						}
+					},
+					"default": {}
+				},
+				"manifest": {
+					"title": "Manifest",
+					"description": "Manifest attributes added to the generated JAR, keyed by attribute name",
+					"type": "object",
+					"default": {}
+				},
+				"runArgs": {
+					"title": "Run Args",
+					"description": "Default arguments passed to `java run`",
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": []
+				},
+				"javaVersion": {
+					"title": "Java Version",
+					"description": "Java install ID used by `java run`",
+					"type": "string",
+					"default": ""
+				},
+				"minJVM": {
+					"title": "Minimum JVM",
+					"description": "Minimum Java version `java run` needs, as used by the server java install commands",
+					"type": [
+						"string",
+						"integer"
+					],
+					"default": 0
+				},
+				"javaDocs": {
+					"title": "Javadocs",
+					"description": "Generate Javadocs when compiling",
+					"type": "boolean",
+					"default": false
+				},
+				"verbose": {
+					"title": "Verbose",
+					"description": "Show verbose compiler and JAR output",
+					"type": "boolean",
+					"default": false
+				}
+			}
+		},
 		"testbox": {
 			"title": "TestBox",
 			"description": "TestBox integration",

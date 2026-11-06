@@ -138,6 +138,71 @@ component {
 	}
 
 	/**
+	 * Doc: "A dev dependency installs into its own directory by default so a test-only JAR can
+	 * never end up in a fatJar." The dependency key is the artifact's `groupId:artifactId` slug.
+	 *
+	 * @test
+	 */
+	function devDependencyUsesDevInstallDirectory( boolean verbose=false ) {
+		var projectPath = scratchDirectory( "dev-install-directory" );
+		writeProjectDescriptor( projectPath, {
+			"name"            : "maven-dev-install-directory",
+			"version"         : "1.0.0",
+			"devDependencies" : { "org.apache.commons:commons-lang3" : "maven:org.apache.commons:commons-lang3:3.14.0" }
+		} );
+
+		var result = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0?transitive=false", projectPath, arguments.verbose );
+		assertEquals( "dist/test-dependencies", result.descriptor.directory, "a dev dependency must install into the dev install directory" );
+	}
+
+	/**
+	 * Doc: "`maven.devInstallDirectory` overrides the normal dev dependency install convention",
+	 * and a runtime dependency is unaffected by it.
+	 *
+	 * @test
+	 */
+	function projectDevInstallDirectoryIsHonored( boolean verbose=false ) {
+		var projectPath = scratchDirectory( "project-dev-install-directory" );
+		writeProjectDescriptor( projectPath, {
+			"name"            : "maven-project-dev-install-directory",
+			"version"         : "1.0.0",
+			"maven"           : { "installDirectory" : "maven-libs", "devInstallDirectory" : "maven-test-libs" },
+			"dependencies"    : { "org.apache.commons:commons-lang3" : "maven:org.apache.commons:commons-lang3:3.14.0" },
+			"devDependencies" : { "org.apache.commons:commons-text" : "maven:org.apache.commons:commons-text:1.11.0" }
+		} );
+
+		var devResult = resolvePackage( "maven:org.apache.commons:commons-text:1.11.0?transitive=false", projectPath, arguments.verbose );
+		assertEquals( "maven-test-libs", devResult.descriptor.directory, "the project maven.devInstallDirectory must be used for dev dependencies" );
+
+		var runtimeResult = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0?transitive=false", projectPath, arguments.verbose );
+		assertEquals( "maven-libs", runtimeResult.descriptor.directory, "a runtime dependency must keep using maven.installDirectory" );
+	}
+
+	/**
+	 * Doc: "Global configuration: `endpoints.maven.devInstallDirectory`."
+	 *
+	 * @test
+	 */
+	function globalDevInstallDirectoryIsHonored( boolean verbose=false ) {
+		var capturedDevDirectory = captureConfigSetting( "endpoints.maven.devInstallDirectory" );
+		try {
+			getInstance( "configService" ).setSetting( "endpoints.maven.devInstallDirectory", "global-test-libs", false, true );
+
+			var projectPath = scratchDirectory( "global-dev-install-directory" );
+			writeProjectDescriptor( projectPath, {
+				"name"            : "maven-global-dev-install-directory",
+				"version"         : "1.0.0",
+				"devDependencies" : { "org.apache.commons:commons-lang3" : "maven:org.apache.commons:commons-lang3:3.14.0" }
+			} );
+
+			var result = resolvePackage( "maven:org.apache.commons:commons-lang3:3.14.0?transitive=false", projectPath, arguments.verbose );
+			assertEquals( "global-test-libs", result.descriptor.directory, "the global endpoints.maven.devInstallDirectory must be honored" );
+		} finally {
+			restoreConfigSetting( "endpoints.maven.devInstallDirectory", capturedDevDirectory );
+		}
+	}
+
+	/**
 	 * Doc install-mode precedence: "1. Endpoint flag: `?installMode=shared` 2. Project `box.json`:
 	 * `maven.installMode` ... 4. Default: `dedicated`".
 	 *
@@ -1666,6 +1731,11 @@ component {
 		};
 	}
 
+	/**
+	 * Stops the throw-away Maven repository server.
+	 *
+	 * @localRepo The repository struct returned by startLocalRepo().
+	 */
 	private void function stopLocalRepo( required struct localRepo ) {
 		arguments.localRepo.server.stop( 0 );
 	}
@@ -1983,6 +2053,12 @@ component {
 	// Assertions
 	// ==============================================================================================
 
+	/**
+	 * Asserts that a JAR with the given file name exists somewhere under a directory.
+	 *
+	 * @directory The directory to search recursively.
+	 * @jarName The JAR file name to look for.
+	 */
 	private void function assertJarExists( required string directory, required string jarName ) {
 		var separators = "/" & chr( 92 );
 		var jars = directoryExists( arguments.directory )
@@ -1998,6 +2074,12 @@ component {
 		error( "Expected a JAR named [#arguments.jarName#] under [#arguments.directory#]; found [#jars.toList( ", " )#]." );
 	}
 
+	/**
+	 * Asserts that running a callback throws.
+	 *
+	 * @callback The callback that should throw.
+	 * @message The failure message when it does not.
+	 */
 	private void function assertThrows( required any callback, required string message ) {
 		if( !catchThrown( arguments.callback ).len() ) {
 			error( arguments.message );
@@ -2023,18 +2105,37 @@ component {
 		return "";
 	}
 
+	/**
+	 * Asserts that a condition is true.
+	 *
+	 * @condition The condition to check.
+	 * @message The failure message.
+	 */
 	private void function assertTrue( required boolean condition, required string message ) {
 		if( !arguments.condition ) {
 			error( arguments.message );
 		}
 	}
 
+	/**
+	 * Asserts that a condition is false.
+	 *
+	 * @condition The condition to check.
+	 * @message The failure message.
+	 */
 	private void function assertFalse( required boolean condition, required string message ) {
 		if( arguments.condition ) {
 			error( arguments.message );
 		}
 	}
 
+	/**
+	 * Asserts that two values are equal.
+	 *
+	 * @expected The expected value.
+	 * @actual The actual value.
+	 * @message Optional label used in the failure message.
+	 */
 	private void function assertEquals( required any expected, required any actual, string message="" ) {
 		if( arguments.expected == arguments.actual ) {
 			return;
