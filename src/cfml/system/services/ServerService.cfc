@@ -1271,6 +1271,7 @@ component accessors="true" singleton {
 		serverInfo.trayOptions = [];
 
 		var mEngine = { "label" : "Engine: " & displayEngineName, "disabled" : true };
+		var mJava = { "label" : "Java: ${runwar.javaVersion}", "disabled" : true };
 		var mWebroot = { "label" : "Webroot: " & appFileSystemPathDisplay, "action" : "openfilesystem", "path" : serverInfo.appFileSystemPath, 'image' : expandPath('/commandbox/system/config/server-icons/folder.png' ) };
 		var mURL = { "label" : "URL: " & serverInfo.defaultBaseURL, 'action':'openbrowser', 'url': serverInfo.defaultBaseURL, 'image' : expandPath('/commandbox/system/config/server-icons/home.png' ) };
 		var mPID = { "label" : "PID: ${runwar.PID}", "disabled" : true  };
@@ -1281,6 +1282,7 @@ component accessors="true" singleton {
 					"label":"Info",
 					"items": [
 						mEngine,
+						mJava,
 						mPID,
 						mHeap
 					],
@@ -1292,6 +1294,7 @@ component accessors="true" singleton {
 					"label":"Info",
 					"items": [
 						mEngine,
+						mJava,
 						mWebroot,
 						mURL,
 						mPID,
@@ -1351,6 +1354,11 @@ component accessors="true" singleton {
 		serverInfo.trayOptions = appendMenuItems( tempOptions, defaultwebroot, [] );
 		serverInfo.trayOptions = appendMenuItems( defaults.trayOptions, defaultwebroot, serverInfo.trayOptions );
 		serverInfo.trayOptions = appendMenuItems( serverJSON.trayOptions ?: [], defaultServerConfigFileDirectory, serverInfo.trayOptions );
+
+		// Divider between the status entry (server name, always rendered first) and the rest of the menu
+		if( !serverInfo.trayOptions.len() || !serverInfo.trayOptions[ 1 ].keyExists( 'separator' ) ) {
+			serverInfo.trayOptions.prepend( { 'label' : '', 'separator' : 'true' } );
+		}
 
 	    // This is due to a bug in RunWar not creating the right directory for the logs
 	    directoryCreate( serverInfo.logDir, true, true );
@@ -1821,14 +1829,14 @@ component accessors="true" singleton {
 		if( serverInfo.isJakartaEE ) {
 			consoleLogger.warn( "Runwar 6.x with Jakarta support is required for #serverInfo.engineName#@#serverInfo.engineVersion#." );
 			// Ensure Runwar 6.x with Jakarta support
-			var runwarJakartaVersion = '6.2.0-SNAPSHOT';
+			var runwarJakartaVersion = '6.2.2';
 			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/#runwarJakartaVersion#/runwar-#runwarJakartaVersion#.jar";
 			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-jakarta-#runwarJakartaVersion#.jar" );
 			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );
 
 		} else {
 			// Ensure Runwar 5.x with javax namespace
-			var runwarVersion = '5.2.6';
+			var runwarVersion = '5.2.8';
 			var runwarJarURL         = "https://s3.amazonaws.com/downloads.ortussolutions.com/cfmlprojects/runwar/legacy-#runwarVersion#/runwar-legacy-#runwarVersion#.jar";
 			var runwarJarLocal       = expandPath( "/commandbox/libExt/runwar-legacy-#runwarVersion#.jar" );
 			var runwarJarFolderLocal = getDirectoryFromPath( runwarJarLocal );

@@ -52,6 +52,12 @@
 					"type": "string",
 					"default": ""
 				},
+				"separator": {
+					"title": "Tray Item Separator",
+					"description": "Render a divider line instead of a menu item. The label is ignored",
+					"type": "boolean",
+					"default": false
+				},
 				"path": {
 					"title": "Tray Item Path",
 					"description": "Filesystem path to open for 'openfilesystem' action",
