@@ -158,6 +158,7 @@ component {
 			print.greenLine( "Installing module metadata..." ).toConsole();
 			fileCopy( "#stagedModuleHome#/box.json", "#moduleHome#/box.json" );
 			fileCopy( "#stagedModuleHome#/ModuleConfig.bx", "#moduleHome#/ModuleConfig.bx" );
+			fileCopy( "#stagedModuleHome#/ShutdownInterruptor.bx", "#moduleHome#/ShutdownInterruptor.bx" );			
 
 			for( var folderName in [ "libs", "cli_modules", "src" ] ) {
 				var sourceFolder = "#stagedModuleHome#/#folderName#";
