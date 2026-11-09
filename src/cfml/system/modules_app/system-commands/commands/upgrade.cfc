@@ -176,6 +176,16 @@ component {
 				directoryCopy( sourceFolder, targetFolder, true );
 			}
 
+			// The metadata cache is a runtime artifact that gets rebuilt on the next start.
+			// Resolve it the same way the cache itself does instead of assuming it sits
+			// under the module root, since the /commandbox mapping is what actually
+			// decides where it lives.
+			var mdCachePath = expandPath( '/commandbox/system/mdCache' );
+			if( directoryExists( mdCachePath ) ) {
+				print.greenLine( "Clearing the command metadata cache..." ).toConsole();
+				directoryDelete( mdCachePath, true );
+			}
+
 			upgradeApplied = true;
 		} finally {
 			if( directoryExists( installDir ) ) {
