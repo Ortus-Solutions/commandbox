@@ -128,7 +128,7 @@ class {
 		mainThread = createObject( "java", "java.lang.Thread" ).currentThread();
 
 		hookThread = createObject( "java", "java.lang.Thread" ).init(
-			createDynamicProxy( new ShutdownInterruptor( mainThread = mainThread ), [ "java.lang.Runnable" ] )
+			createDynamicProxy( new src.system.util.ShutdownInterruptor( mainThread = mainThread ), [ "java.lang.Runnable" ] )
 		);
 		createObject( "java", "java.lang.Runtime" ).getRuntime().addShutdownHook( hookThread );
 	}
