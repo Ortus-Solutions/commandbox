@@ -107,11 +107,16 @@ class {
 			exitCode = 1;
 		}
 
-		// Control the exit so we can set the exit code
+		// SHIM: BoxLang cores older than 1.20 ignore a module main() return value, so we have to
+		// set the process exit code ourselves before BoxRunner exits.  Remove this block once
+		// core 1.20 is our minimum supported version-- the return below handles it on its own.
 		if( exitCode != 0 ) {
 			boxRuntime.shutdown();
 			System.exit( exitCode );
 		}
+
+		// BoxRunner uses this as the process exit code
+		return exitCode;
 	}
 
 	/**
