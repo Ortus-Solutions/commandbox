@@ -748,6 +748,29 @@ component accessors="true" singleton {
 	}
 
 	/**
+	* Is this exception the user hitting Ctrl-C?
+	*
+	* An interrupt must never be swallowed, retried, or printed as an ordinary error-- doing so
+	* makes the user hit Ctrl-C repeatedly to get out of whatever is running.
+	*
+	* @e The exception to inspect
+	*/
+	boolean function isInterrupt( required any e ) {
+		// A wrapped cause, i.e. BoxLang's sleep() throws a BoxRuntimeException around InterruptedException
+		if( !isNull( e.getCause() ) && e.getCause().getClass().getName() == 'java.lang.InterruptedException' ) {
+			return true;
+		}
+
+		var type	= ( e.type ?: '' ).toString();
+		var message	= ( e.message ?: '' ).toString();
+
+		return type == 'UserInterruptException'
+			|| message == 'UserInterruptException'
+			|| type.findNoCase( 'interrupt' ) > 0
+			|| message.findNoCase( 'interrupt' ) > 0;
+	}
+
+	/**
 	* @filePath The path to the history file to set
 	*
 	* Use this wrapper method to change the history file in use by the shell.

@@ -59,7 +59,7 @@ class {
 		// When the Java bootstrap launched us in-process it registers its own shutdown hook that
 		// interrupts the main thread, so don't add a second one here.
 		if( !calledByInstaller ) {
-			registerShutdownHook();
+			registerShutdownHook( debug );
 		}
 
 		server.unlock();
@@ -123,13 +123,17 @@ class {
 	 * signal handler and no keystroke is ever delivered-- the control event becomes a plain
 	 * JVM shutdown instead.  Interrupting main lets the normal interrupt handling run.
 	 */
-	private function registerShutdownHook() {
+	private function registerShutdownHook( required boolean debug ) {
 		// main() runs on the main thread, so that's the one to interrupt
 		mainThread = createObject( "java", "java.lang.Thread" ).currentThread();
 
-		hookThread = createObject( "java", "java.lang.Thread" ).init(
-			createDynamicProxy( new src.system.util.ShutdownInterruptor( mainThread = mainThread ), [ "java.lang.Runnable" ] )
-		);
+		// The hook is a real Java object (compiled into ortus-java.jar in this module's
+		// libs) rather than a BoxLang dynamic proxy.  The hook body runs after the BoxLang
+		// runtime has been torn down, so a BoxLang implementation would have to bootstrap a
+		// brand new runtime with default settings just to interrupt main.
+		interruptor = createObject( "java", "com.ortussolutions.commandbox.cli.ShutdownInterruptor" ).init( mainThread, arguments.debug );
+
+		hookThread = createObject( "java", "java.lang.Thread" ).init( interruptor, "CommandBox-ShutdownHook" );
 		createObject( "java", "java.lang.Runtime" ).getRuntime().addShutdownHook( hookThread );
 	}
 

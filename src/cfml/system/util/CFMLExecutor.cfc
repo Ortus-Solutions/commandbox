@@ -62,6 +62,10 @@ component {
 			return runFile( tmpFileAbsolute, arguments.vars );
 		} catch( any e ){
 
+			// An interrupt must never be retried-- rerunning the code just eats the user's next Ctrl-C
+			if( $shell.isInterrupt( e ) ) {
+				rethrow;
+			}
 			// generate cfml command to write to file
 			local.CFMLFileContents = ( arguments.script ? "<cfscript>" & arguments.code & "</cfscript>" : arguments.code );
 

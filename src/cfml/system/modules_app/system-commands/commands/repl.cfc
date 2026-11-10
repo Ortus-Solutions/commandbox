@@ -115,7 +115,7 @@ component {
 							// Attempt evaluation
 							results = REPLParser.evaluateCommand( executor, arguments.directory );
 						} catch (any var e) {
-							if( e.type == 'java.lang.InterruptedException' ) {
+							if( shell.isInterrupt( e ) ) {
 								rethrow;
 							}
 							// execute our command using temp file
@@ -128,6 +128,12 @@ component {
 						print.line( results, structKeyExists( arguments, 'input' ) ? '' : '' )
 
 					} catch( any e ){
+
+						// Ctrl-C is not a REPL error-- let it unwind so the shell can report CANCELLED
+						if( shell.isInterrupt( e ) ) {
+							rethrow;
+						}
+
 						// flush out anything in buffer
 						print.toConsole();
 						// Trim the stack trace to here, if the error happened inside the CFMLExecutor
