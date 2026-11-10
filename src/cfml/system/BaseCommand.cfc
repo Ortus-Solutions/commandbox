@@ -393,8 +393,48 @@ component accessors="true" singleton {
 		string luceeContextType='server',
 		string luceeContextPassword='commandbox'
 	){
-		throw( "Not implemented in BoxLang CLI yet" );
-	//	new Administrator( luceeContextType, luceeContextPassword ).updateExtension( extensionID, extensionVersion );
+		throw( "CommandBox 7+ is running on BoxLang, and cannot install Lucee extensions." );
+	}
+	
+	/**
+	 * Install a BoxLang module into the CLI.
+	 * If the module is already installed, nothing will happen
+	 *
+	 * @installID The ID of the BoxLang module to install into the CLI. Passed to the `install` command, and can use any install endpoint.
+	 * @moduleName The name of the BoxLang module to install into the CLI. This is ONLY used to skip install if the ModuleService already has it loaded.  Defaults to installID
+	 * @quiet Whether to show the output of the install command
+	 * @verbose Whether to run the install command in verbose mode. (pointless if quiet is true)
+	 * @force Whether to force the installation even if the module is already installed.
+	 */
+	function installBoxLangModule(
+		required string installID,
+		required string moduleName=arguments.installID,
+		boolean quiet=false,
+		boolean verbose=false,
+		boolean force=false
+	){
+		var boxLangCoreModuleDir = getBoxRuntime().getRuntimeHome() & "/modules/";
+		// if name is bx-pdf, check that AND just pdf. 
+		if( !arguments.force && getBoxRuntime().getModuleService().hasModule( arguments.moduleName )
+			|| !arguments.force && getBoxRuntime().getModuleService().hasModule( replace( arguments.moduleName, "bx-", "" ) ) ) {
+			if( !arguments.quiet ) {
+				print.greenLine( "BoxLang module already installed: " & arguments.moduleName );
+			}
+			return;
+		}
+		
+		command( "install" )
+			.params( 
+				ID : arguments.installID,
+				directory : boxLangCoreModuleDir
+				)
+			.run( returnOutput = arguments.quiet );
+
+		getBoxRuntime().getModuleService().loadModules( createObject( "java", "java.nio.file.Paths" ).get( boxLangCoreModuleDir ) );
+		if( !arguments.quiet ) {
+			print.greenLine( "Installed and activated BoxLang module: " & arguments.installID );
+		}
+
 	}
 
 }

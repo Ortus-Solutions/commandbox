@@ -109,18 +109,22 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
-	 * Interrupts the main thread when the JVM is shutting down so CommandBox can stop
+	 * Interrupts the main thread when the JVM is shutting down so CommandBox can
+	 * stop
 	 * anything it started (such as a server) before the process exits.
 	 *
-	 * This matters when there is no interactive terminal to deliver a Ctrl-C to-- for
+	 * This matters when there is no interactive terminal to deliver a Ctrl-C to--
+	 * for
 	 * example a process started by a service manager, which sends a console control
-	 * event that becomes a shutdown rather than a keystroke.  Without this, the JVM
+	 * event that becomes a shutdown rather than a keystroke. Without this, the JVM
 	 * simply exits and any child processes CommandBox started are left running.
 	 *
-	 * Mirrors the hook the BoxLang CLI module registers (ShutdownInterruptor), so both
+	 * Mirrors the hook the BoxLang CLI module registers (ShutdownInterruptor), so
+	 * both
 	 * entry points into the CLI behave the same way.
 	 *
-	 * Note that {@code main} never returns here: BoxRunner runs in-process and calls
+	 * Note that {@code main} never returns here: BoxRunner runs in-process and
+	 * calls
 	 * System.exit(), so the hook must rely on main's liveness rather than a "main
 	 * finished" flag.
 	 */
@@ -176,9 +180,12 @@ public class CommandBoxCLIMain {
 	/**
 	 * Is the main thread parked somewhere it can no longer make progress from?
 	 *
-	 * Either it is inside ApplicationShutdownHooks.runHooks() joining this very hook, or it is
-	 * parked in java.lang.Shutdown.exit() because another thread (a SIGINT/SIGTERM handler)
-	 * already owns the shutdown sequence and holds the Shutdown class monitor forever.  In
+	 * Either it is inside ApplicationShutdownHooks.runHooks() joining this very
+	 * hook, or it is
+	 * parked in java.lang.Shutdown.exit() because another thread (a SIGINT/SIGTERM
+	 * handler)
+	 * already owns the shutdown sequence and holds the Shutdown class monitor
+	 * forever. In
 	 * both cases waiting on main just burns the whole grace period.
 	 */
 	private static boolean mainThreadIsParked(Thread mainThread) {
@@ -1048,41 +1055,25 @@ public class CommandBoxCLIMain {
 		File installRoot = realExecutable.getParentFile() == null ? null
 				: realExecutable.getParentFile().getParentFile();
 		File libraryDirectory = installRoot == null ? null : new File(installRoot, "lib");
-		File boxLangJar = libraryDirectory == null ? null : new File(libraryDirectory, BOXLANG_JAR);
+		File boxLangJar = resolveBoxLangJar(libraryDirectory);
 		debug("BoxLang install root: " + (installRoot == null ? "unresolved" : installRoot.getAbsolutePath()));
 		debug("BoxLang library directory: "
 				+ (libraryDirectory == null ? "unresolved" : libraryDirectory.getAbsolutePath()));
-		if ((boxLangJar == null || !boxLangJar.isFile()) && libraryDirectory != null) {
-			File[] versionedBoxLangJars = libraryDirectory.listFiles((directory, name) -> name.startsWith("boxlang-")
-					&& name.endsWith(".jar")
-					&& !name.startsWith("boxlang-miniserver-"));
-			if (versionedBoxLangJars != null && versionedBoxLangJars.length > 0) {
-				Arrays.sort(versionedBoxLangJars, Comparator.comparing(File::getName));
-				boxLangJar = versionedBoxLangJars[versionedBoxLangJars.length - 1];
-			}
+		if (boxLangJar == null) {
+			throw new IOException("BoxLang runtime was not installed in: " + libraryDirectory);
 		}
-		if (boxLangJar == null || !boxLangJar.isFile()) {
-			throw new IOException("BoxLang runtime was not installed: " + boxLangJar);
-		}
+		debug("BoxLang runtime jar: " + boxLangJar.getAbsolutePath());
 		// Settings previously passed to a child process environment now configure the
 		// in-process runtime as system properties.
 		System.setProperty(BOXLANG_HOME_PROPERTY, boxLangHome.getAbsolutePath());
 		System.setProperty(COMMANDBOX_HOME_PROPERTY, commandBoxHome.getAbsolutePath());
 		System.setProperty("cfml.cli.pwd", workingDirectory);
 		System.setProperty("COMMANDBOX_INSTALLER_BOOTSTRAP", "true");
-		// Load every JAR in the library directory so the runtime and its dependencies
-		// are
-		// available inside this JVM, then invoke BoxRunner directly with the cli
-		// module.
+		// Only the BoxLang runtime jar is loaded. The mini server jar is installed
+		// alongside it in the library directory and must stay off this classpath.
+		// The runtime is then invoked directly with the cli module.
 		List<URL> jarUrls = new ArrayList<URL>();
-		File[] libraryJars = libraryDirectory.listFiles();
-		if (libraryJars != null) {
-			for (File libraryJar : libraryJars) {
-				if (libraryJar.isFile() && libraryJar.getName().endsWith(".jar")) {
-					jarUrls.add(libraryJar.toURI().toURL());
-				}
-			}
-		}
+		jarUrls.add(boxLangJar.toURI().toURL());
 		debug("BoxLang runtime JARs: " + jarUrls);
 		URLClassLoader boxLangLoader = new URLClassLoader(jarUrls.toArray(new URL[jarUrls.size()]),
 				CommandBoxCLIMain.class.getClassLoader());
@@ -1093,6 +1084,87 @@ public class CommandBoxCLIMain {
 		System.arraycopy(arguments, 0, forwardedArguments, 1, arguments.length);
 		debug("Invoking BoxRunner in-process with: " + Arrays.toString(forwardedArguments));
 		main.invoke(null, (Object) forwardedArguments);
+	}
+
+	/**
+	 * Selects the BoxLang runtime jar from an installed library directory.
+	 *
+	 * Candidate jars must contain "boxlang" in their name, compared without regard
+	 * to case. The mini server jar also carries that name fragment and is excluded.
+	 * When multiple runtime jars are installed, the highest version wins, falling
+	 * back to the most recently modified file.
+	 *
+	 * @param libraryDirectory BoxLang library directory.
+	 * @return Runtime jar, or null when no runtime jar is installed.
+	 */
+	private static File resolveBoxLangJar(File libraryDirectory) {
+		if (libraryDirectory == null) {
+			return null;
+		}
+		File[] runtimeJars = libraryDirectory.listFiles((directory, name) -> {
+			String lowerCaseName = name.toLowerCase(Locale.ROOT);
+			return lowerCaseName.endsWith(".jar")
+					&& lowerCaseName.contains("boxlang")
+					&& !lowerCaseName.contains("miniserver");
+		});
+		if (runtimeJars == null || runtimeJars.length == 0) {
+			return null;
+		}
+		Arrays.sort(runtimeJars, CommandBoxCLIMain::compareRuntimeJars);
+		return runtimeJars[runtimeJars.length - 1];
+	}
+
+	/**
+	 * Orders two BoxLang runtime jars so the preferred runtime sorts last.
+	 *
+	 * An unversioned {@code boxlang.jar} outranks versioned names, then the highest
+	 * embedded version wins, and finally the most recently modified file wins.
+	 *
+	 * @param left  Left jar.
+	 * @param right Right jar.
+	 * @return Negative when the left jar is preferred less, positive when more.
+	 */
+	private static int compareRuntimeJars(File left, File right) {
+		String leftName = left.getName().toLowerCase(Locale.ROOT);
+		String rightName = right.getName().toLowerCase(Locale.ROOT);
+		boolean leftUnversioned = leftName.equals(BOXLANG_JAR);
+		boolean rightUnversioned = rightName.equals(BOXLANG_JAR);
+		if (leftUnversioned != rightUnversioned) {
+			return leftUnversioned ? 1 : -1;
+		}
+		String leftVersion = extractJarVersion(left.getName());
+		String rightVersion = extractJarVersion(right.getName());
+		if (leftVersion != null && rightVersion != null) {
+			int versionComparison = compareVersions(leftVersion, rightVersion);
+			if (versionComparison != 0) {
+				return versionComparison;
+			}
+		}
+		return Long.compare(left.lastModified(), right.lastModified());
+	}
+
+	/**
+	 * Extracts the first version-like token from a jar file name.
+	 *
+	 * @param fileName Jar file name.
+	 * @return Version string, or null when the name carries no version.
+	 */
+	private static String extractJarVersion(String fileName) {
+		StringBuilder version = new StringBuilder();
+		for (int index = 0; index < fileName.length(); index++) {
+			char character = fileName.charAt(index);
+			if (Character.isDigit(character)) {
+				version.append(character);
+			} else if (character == '.' && version.length() > 0) {
+				version.append(character);
+			} else if (version.length() > 0) {
+				break;
+			}
+		}
+		while (version.length() > 0 && version.charAt(version.length() - 1) == '.') {
+			version.setLength(version.length() - 1);
+		}
+		return version.length() == 0 ? null : version.toString();
 	}
 
 	/**
