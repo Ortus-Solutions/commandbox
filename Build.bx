@@ -1011,10 +1011,25 @@ class {
 			& '--exclude "*" --include "repodata/*"'
 		).run();
 		fileCopy( rpmPath, stagingPath & "/" & getFileFromPath( rpmPath ), true );
+
+		// Rebuilding a package that is already in the repository reuses the same NEVRA and the
+		// same location href, so its metadata entry must be REPLACED rather than added.
+		// Passing --includepkg together with --recycle-pkglist does not replace anything:
+		// createrepo_c appends explicitly selected packages to the recycled list, leaving the
+		// repo with two <package> entries for the one rpm. dnf resolves the stale entry and
+		// aborts with "Inconsistent server data, reported file Content-Length: X, repository
+		// metadata states file length: Y". Passing --excludes for that file does not work
+		// either, because it drops the package from the metadata entirely.
+		//
+		// So prune the existing entry in a first pass, then add the freshly built rpm in a
+		// second. Pruning a package that is not in the repository yet is a no-op, which keeps
+		// this correct for brand new versions too.
+		var rpmFileName = getFileFromPath( rpmPath );
 		command( "run" ).params(
 			'docker run --rm -v "#dockerRepoPath#:/repo" rockylinux:8 '
-			& 'sh -c "dnf -qy install createrepo && createrepo --update --recycle-pkglist '
-			& '--skip-stat --includepkg #getFileFromPath( rpmPath )# /repo"'
+			& 'sh -c "dnf -qy install createrepo'
+			& ' && createrepo --update --recycle-pkglist --skip-stat --excludes #rpmFileName# /repo'
+			& ' && createrepo --update --recycle-pkglist --skip-stat --includepkg #rpmFileName# /repo"'
 		).run();
 
 		print.greenLine( "Updated staged RPM repository #stagingPath#" );
