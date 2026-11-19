@@ -121,11 +121,11 @@ component singleton accessors="true" {
 	/**
 	 * Get the full path to the "box" binary that started the current process.
 	 *
-	 * CommandBox 7 and higher record the launcher in BOX_PROCESS_PATH. Older versions and
+	 * CommandBox 7 and higher record the launcher in BOXLANG_PROCESS_PATH. Older versions and
 	 * unusual launch styles fall back to whatever "box" resolves to on the PATH.
 	 **/
 	string function getBoxBinary() {
-		var processPath = systemSettings.getEnv( 'BOX_PROCESS_PATH', '' );
+		var processPath = systemSettings.getEnv( 'BOXLANG_PROCESS_PATH', '' );
 		if( isSimpleValue( processPath ) && len( trim( processPath ) ) ) {
 			return trim( processPath );
 		}
@@ -221,7 +221,7 @@ component singleton accessors="true" {
 	private function getScriptContent( required string command ) {
 		if ( fileSystemUtil.isWindows() ) {
 			// @ suppresses echo, %* passes all arguments
-			return '@if not defined BOX_PROCESS_PATH set "BOX_PROCESS_PATH=%~f0"' & chr( 13 ) & chr( 10 ) &
+			return '@if not defined BOXLANG_PROCESS_PATH set "BOXLANG_PROCESS_PATH=%~f0"' & chr( 13 ) & chr( 10 ) &
 				"@" & command & " %*";
 		} else {
 			// Unix shell script (Mac and Linux)
@@ -230,17 +230,17 @@ component singleton accessors="true" {
 			// "$@" - Passes all arguments to the command (properly quoted)
 			// POSIX-only builtins and expansions so this runs on dash, ash/busybox (Alpine), etc.
 			return "##!/bin/sh" & chr( 10 ) &
-				'if [ -z "${BOX_PROCESS_PATH:-}" ]; then' & chr( 10 ) &
-				'	BOX_PROCESS_PATH="$0"' & chr( 10 ) &
-				'	case "$BOX_PROCESS_PATH" in' & chr( 10 ) &
+				'if [ -z "${BOXLANG_PROCESS_PATH:-}" ]; then' & chr( 10 ) &
+				'	BOXLANG_PROCESS_PATH="$0"' & chr( 10 ) &
+				'	case "$BOXLANG_PROCESS_PATH" in' & chr( 10 ) &
 				"		*/*) ;;" & chr( 10 ) &
-				'		*) BOX_PROCESS_PATH="$(command -v -- "$BOX_PROCESS_PATH" 2>/dev/null || printf %s "$BOX_PROCESS_PATH")" ;;' & chr( 10 ) &
+				'		*) BOXLANG_PROCESS_PATH="$(command -v -- "$BOXLANG_PROCESS_PATH" 2>/dev/null || printf %s "$BOXLANG_PROCESS_PATH")" ;;' & chr( 10 ) &
 				"	esac" & chr( 10 ) &
-				'	case "$BOX_PROCESS_PATH" in' & chr( 10 ) &
-				'		*/*) BOX_PROCESS_PATH="$(CDPATH= cd -P "${BOX_PROCESS_PATH%/*}" && pwd -P)/${BOX_PROCESS_PATH####*/}" ;;' & chr( 10 ) &
+				'	case "$BOXLANG_PROCESS_PATH" in' & chr( 10 ) &
+				'		*/*) BOXLANG_PROCESS_PATH="$(CDPATH= cd -P "${BOXLANG_PROCESS_PATH%/*}" && pwd -P)/${BOXLANG_PROCESS_PATH####*/}" ;;' & chr( 10 ) &
 				"	esac" & chr( 10 ) &
 				"fi" & chr( 10 ) &
-				"export BOX_PROCESS_PATH" & chr( 10 ) &
+				"export BOXLANG_PROCESS_PATH" & chr( 10 ) &
 				"exec " & command & ' "$@"';
 		}
 	}

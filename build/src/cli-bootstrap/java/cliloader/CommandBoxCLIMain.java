@@ -76,6 +76,7 @@ public class CommandBoxCLIMain {
 		File launcherDirectory = new File(
 				CommandBoxCLIMain.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
 		debug("Launcher directory: " + launcherDirectory.getAbsolutePath());
+		applyAdjacentProperties(launcherDirectory);
 		File commandBoxHome = resolveCommandBoxHome(arguments, launcherDirectory);
 		debug("CommandBox home: " + commandBoxHome.getAbsolutePath());
 		System.setProperty(COMMANDBOX_HOME_PROPERTY, commandBoxHome.getAbsolutePath());
@@ -242,11 +243,26 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
-	 * Applies semicolon-delimited JVM properties supplied through BOX_JAVA_PROPS.
+	 * Applies semicolon-delimited JVM properties supplied through the property environment
+	 * variables, least specific first: BOXLANG_PROPS, then the process layer named after the
+	 * launcher (<LAUNCHER>_PROPS), then the legacy CommandBox variable.
+	 *
+	 * Properties set later win, because setting the same key again replaces the value.
 	 */
 	private static void applyJavaProperties() {
-		String javaProperties = getEnvironmentIgnoreCase("BOX_JAVA_PROPS");
-		debug("BOX_JAVA_PROPS: " + (javaProperties == null ? "<not set>" : javaProperties));
+		applyJavaProperties("BOXLANG_PROPS");
+		applyJavaProperties(getLauncherEnvPrefix() + "_PROPS");
+		applyJavaProperties("BOX_JAVA_PROPS");
+	}
+
+	/**
+	 * Applies one semicolon-delimited property variable.
+	 *
+	 * @param variableName Name of the environment variable to read.
+	 */
+	private static void applyJavaProperties(String variableName) {
+		String javaProperties = getEnvironmentIgnoreCase(variableName);
+		debug(variableName + ": " + (javaProperties == null ? "<not set>" : javaProperties));
 		if (javaProperties == null || javaProperties.trim().isEmpty()) {
 			return;
 		}
@@ -257,8 +273,32 @@ public class CommandBoxCLIMain {
 				debug("Applied JVM property: " + property.substring(0, separator) + "="
 						+ property.substring(separator + 1));
 			} else {
-				debug("Ignored malformed BOX_JAVA_PROPS entry: " + property);
+				debug("Ignored malformed " + variableName + " entry: " + property);
 			}
+		}
+	}
+
+	/**
+	 * Applies every entry in the properties file beside the launcher as a JVM
+	 * system property.
+	 *
+	 * The legacy LoaderCLIMain read the whole file into system properties, so the
+	 * same file entry like "boxlang.home=/opt/boxlang" was a general -D escape
+	 * hatch. This restores that behavior for the current launcher.
+	 *
+	 * Values are applied unconditionally, which matches the legacy loader: the file
+	 * wins over properties that are already set. Note that resolveCommandBoxHome still
+	 * lets an explicit -CommandBox_home argument take precedence over the file,
+	 * because it checks the command line first.
+	 *
+	 * @param launcherDirectory Directory containing the launcher.
+	 * @throws IOException If the properties file cannot be read.
+	 */
+	private static void applyAdjacentProperties(File launcherDirectory) throws IOException {
+		Properties adjacentProperties = loadAdjacentProperties(launcherDirectory);
+		for (String propertyName : adjacentProperties.stringPropertyNames()) {
+			System.setProperty(propertyName, adjacentProperties.getProperty(propertyName));
+			debug("Applied JVM property from adjacent properties file: " + propertyName);
 		}
 	}
 
@@ -303,17 +343,24 @@ public class CommandBoxCLIMain {
 	}
 
 	/**
-	 * Loads commandbox.properties or cli.properties beside the launcher.
+	 * Loads the properties file beside the launcher.
+	 *
+	 * The file is named after the launcher, so box.jar uses box.properties. The legacy
+	 * commandbox.properties and cli.properties names are still accepted when the launcher named
+	 * file is absent.
 	 *
 	 * @param launcherDirectory Directory containing the launcher.
-	 * @return Loaded properties, or an empty set when neither file exists.
+	 * @return Loaded properties, or an empty set when no file exists.
 	 * @throws IOException If the properties file cannot be read.
 	 */
 	private static Properties loadAdjacentProperties(File launcherDirectory) throws IOException {
 		Properties properties = new Properties();
+		File launcherProperties = new File(launcherDirectory, getLauncherStem() + ".properties");
 		File commandBoxProperties = new File(launcherDirectory, "commandbox.properties");
 		File cliProperties = new File(launcherDirectory, "cli.properties");
-		File propertiesFile = commandBoxProperties.isFile() ? commandBoxProperties : cliProperties;
+		File propertiesFile = launcherProperties.isFile() ? launcherProperties
+				: commandBoxProperties.isFile() ? commandBoxProperties : cliProperties;
+		debug("Checking properties file: " + launcherProperties.getAbsolutePath());
 		debug("Checking properties file: " + commandBoxProperties.getAbsolutePath());
 		debug("Checking properties file: " + cliProperties.getAbsolutePath());
 		if (propertiesFile.isFile()) {
@@ -323,6 +370,33 @@ public class CommandBoxCLIMain {
 			}
 		}
 		return properties;
+	}
+
+	/**
+	 * File name of the launcher without its extension, for example box.
+	 *
+	 * @return The launcher stem, or "box" when it cannot be determined.
+	 */
+	private static String getLauncherStem() {
+		try {
+			File launcher = new File(
+					CommandBoxCLIMain.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+			String name = launcher.getName();
+			int dot = name.lastIndexOf('.');
+			return dot > 0 ? name.substring(0, dot) : name;
+		} catch (Exception exception) {
+			return "box";
+		}
+	}
+
+	/**
+	 * Prefix for the process specific environment variables, derived from the launcher file
+	 * name: box -> BOX, commandbox-miniserver -> COMMANDBOX_MINISERVER.
+	 *
+	 * @return The upper cased prefix.
+	 */
+	private static String getLauncherEnvPrefix() {
+		return getLauncherStem().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "_");
 	}
 
 	/**
@@ -971,9 +1045,18 @@ public class CommandBoxCLIMain {
 		Path boxLangPath = boxLangExecutable.toPath().toRealPath();
 		Path launcher = boxLangPath.getParent().resolve(isWindows() ? "box.bat" : "box");
 		String executablePath = boxLangPath.toString();
+		// Record this launcher in BOXLANG_PROCESS_PATH, leaving an inherited value alone, so the
+		// BoxLang launcher can find box.options / box.properties and BOX_OPTS / BOX_PROPS.
 		String contents = isWindows()
-				? "@echo off\r\n\"" + executablePath + "\" cli %*\r\n"
-				: "#!/bin/sh\nexec \"" + executablePath + "\" cli \"$@\"\n";
+				? "@echo off\r\n"
+						+ "if not defined BOXLANG_PROCESS_PATH set \"BOXLANG_PROCESS_PATH=%~f0\"\r\n"
+						+ "\"" + executablePath + "\" cli %*\r\n"
+				: "#!/bin/sh\n"
+						+ "if [ -z \"${BOXLANG_PROCESS_PATH:-}\" ]; then\n"
+						+ "\tBOXLANG_PROCESS_PATH=\"$0\"\n"
+						+ "fi\n"
+						+ "export BOXLANG_PROCESS_PATH\n"
+						+ "exec \"" + executablePath + "\" cli \"$@\"\n";
 		Files.write(launcher, contents.getBytes(StandardCharsets.UTF_8));
 		if (!isWindows() && !launcher.toFile().setExecutable(true, false)) {
 			throw new IOException("Unable to make CommandBox launcher executable: " + launcher);

@@ -5,6 +5,13 @@ import java.nio.file.Paths;
 class {
 
 	function configure() {
+		// box.exe and the self-extracting launcher apply BOX_JAVA_PROPS before BoxLang starts. A
+		// box that was installed into the BoxLang runtime (`box` -> `boxlang cli`) skipped that
+		// Java code, so apply the same environment variable here.
+		if( !isInstallerBootstrap() ) {
+			applyJavaProperties();
+		}
+
 		variables.settings = {
 			// We're not looking for a commandbox.properties file in this module boostrap since there's no real file system convention
 			// for where we'd look since direct module invocation doesn't use box.exe.  
@@ -140,6 +147,47 @@ class {
 
 		hookThread = createObject( "java", "java.lang.Thread" ).init( interruptor, "CommandBox-ShutdownHook" );
 		createObject( "java", "java.lang.Runtime" ).getRuntime().addShutdownHook( hookThread );
+	}
+
+	/**
+	 * Applies JVM properties supplied through the BOX_JAVA_PROPS environment variable.
+	 *
+	 * The value is a semicolon delimited list of key=value pairs, exactly like the box.exe
+	 * launcher expects, and each pair is set as a system property. Malformed entries are
+	 * ignored.
+	 */
+	private function applyJavaProperties() {
+		// Least specific first: BOXLANG_PROPS, then the process layer, then the legacy variable
+		applyPropertyVariable( "BOXLANG_PROPS" );
+		applyPropertyVariable( "BOX_PROPS" );
+		applyPropertyVariable( "BOX_JAVA_PROPS" );
+	}
+
+	/**
+	 * Applies one semicolon delimited key=value list as JVM system properties.
+	 *
+	 * @variableName The environment variable or system property to read
+	 */
+	private function applyPropertyVariable( required string variableName ) {
+		for( property in trim( getSystemSetting( arguments.variableName, "" ) ).split( ";" ) ) {
+			property = trim( property );
+			if( !len( property ) ) {
+				continue;
+			}
+			var separatorIndex = property.find( "=" );
+			if( separatorIndex ) {
+				System.setProperty( property.left( separatorIndex - 1 ), property.mid( separatorIndex + 1 ) );
+			}
+		}
+	}
+
+	/**
+	 * True when the CommandBoxCLIMain launcher started this module in-process.
+	 *
+	 * That launcher has already applied the property variables, so the module must not repeat it.
+	 */
+	private function isInstallerBootstrap() {
+		return getSystemSetting( "COMMANDBOX_INSTALLER_BOOTSTRAP", "" ) == "true";
 	}
 
 	/**

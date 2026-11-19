@@ -9,6 +9,12 @@
 	<jre>
 		<path>./jre/;%JAVA_HOME%;%JRE_HOME%;%JDK_HOME%;%PATH%</path>
 		<minVersion>1.8.0</minVersion>
+		<!-- JVM args from the environment, least specific first. launch4j expands one variable per
+		     opt, so each layer needs its own line; later entries win because the JVM uses the
+		     last occurrence. BOX_JAVA_ARGS is the legacy alias of BOX_OPTS. -->
+		<opt>%BOXLANG_OPTS%</opt>
+		<opt>%BOX_OPTS%</opt>
+		<opt>%BOX_JAVA_ARGS%</opt>
 	</jre>
 	<versionInfo>
 		<fileVersion>@FILE_VERSION@</fileVersion>
