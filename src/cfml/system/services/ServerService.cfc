@@ -1467,6 +1467,10 @@ component accessors="true" singleton {
 			.append( 'runwar.Start' )
 			.append( serverInfo.serverInfoJSON );
 
+		// A generated start script runs the server in the foreground (a console server), so keep a
+		// copy of the command line without the *nix process-detaching wrapper below for it to use.
+		var foregroundArgs = duplicate( args );
+
 	    // In *nix OS's we need to separate the server process from the CLI process
 	    // so SIGINTs from Ctrl-C won't also kill previously started servers
 	    if( !fileSystemUtil.isWindows() && background ) {
@@ -1572,7 +1576,8 @@ component accessors="true" singleton {
 			defaults=defaults,
 			serverProps=serverProps,
 			serverDetails=serverDetails,
-			installDetails=installDetails ?: {}
+			installDetails=installDetails ?: {},
+			foregroundCommandLineArguments=foregroundArgs
 		};
 		interceptorService.announceInterception( 'onServerProcessLaunch', interceptData );
 		// ensure we get the updated args if they were replaced wholesale by interceptor

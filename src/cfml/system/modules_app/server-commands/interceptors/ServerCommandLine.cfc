@@ -30,7 +30,8 @@ component {
 				);
 			} else {
 				generateStartScript(
-					interceptData.commandLineArguments,
+					// The foreground command line skips the *nix spawner/nohup wrapper so the script starts a console server
+					interceptData.foregroundCommandLineArguments ?: interceptData.commandLineArguments,
 					interceptData.serverProps.startScript,
 					interceptData.serverProps.startScriptFile ?: '',
 					interceptData.serverInfo.serverConfigFile
