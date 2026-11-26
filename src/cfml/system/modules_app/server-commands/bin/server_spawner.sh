@@ -14,7 +14,16 @@ shift
 
 # Pass all remaining args through to "nohup" which will make the server process ignore
 # 'hangup' signals so it stays running and it not part of the thread group that the CLI is in.
-nohup "$@" > "$log_file" 2>&1 &
+#
+# macOS's nohup refuses to run at all outside a console session: it detaches from the console first
+# and exits 127 with "nohup: can't detach from console" when that fails, which is the case for every
+# launchd system daemon.  When nohup can't be used for that, ignore hangup the POSIX way instead -
+# the server still outlives the CLI and is still immune to the terminal being closed.
+if nohup true > /dev/null 2>&1; then
+	nohup "$@" > "$log_file" 2>&1 &
+else
+	( trap '' HUP; exec "$@" ) > "$log_file" 2>&1 < /dev/null &
+fi
 
 # Grab the PID of our server (last backgrounded job)
 p_name=$!

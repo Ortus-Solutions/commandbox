@@ -42,9 +42,40 @@ public class CommandBoxCLIMain {
 	private static final String BOXLANG_HOME_ENVIRONMENT = "BOXLANG_HOME";
 	private static final String BOXLANG_INSTALL_HOME_ENVIRONMENT = "BOXLANG_INSTALL_HOME";
 	private static final String BVM_HOME_ENVIRONMENT = "BVM_HOME";
+	private static final String BOX_PROCESS_PATH_ENVIRONMENT = "BOX_PROCESS_PATH";
+	private static final String CLI_PROCESS_PATH_PROPERTY = "cfml.cli.processPath";
 	private static final int SHUTDOWN_CHECK_MILLIS = 100;
 	private static final int MAX_SHUTDOWN_CHECKS = 100;
 	private static boolean debugEnabled;
+
+	/**
+	 * Records the binary this process was started by, so anything that needs to launch CommandBox
+	 * again - a service, a spawned process - can use the exact same binary.  The environment variable
+	 * is what the shell wrappers export; a native launcher can't add to its own environment, so the
+	 * path it was started from (`java.class.path` is the launcher itself) is published as the system
+	 * property counterpart.  Started as `java -jar box.jar` neither is available and nothing is set.
+	 */
+	private static void captureProcessPath() {
+		if (System.getProperty(CLI_PROCESS_PATH_PROPERTY, "").length() > 0) {
+			return;
+		}
+		String classPath = System.getProperty("java.class.path", "");
+		String lower = classPath.toLowerCase(Locale.ROOT);
+		// Only a single class path entry can be the launcher itself - a real class path has several
+		// entries and none of them is the binary we were started by
+		boolean singleEntry = classPath.length() > 0
+				&& classPath.indexOf(File.pathSeparatorChar) == -1;
+		if (singleEntry && (lower.endsWith("box.exe") || lower.endsWith("/box") || lower.endsWith("\\box"))) {
+			System.setProperty(CLI_PROCESS_PATH_PROPERTY, classPath);
+			debug("CLI process path: " + classPath);
+			return;
+		}
+		String envPath = System.getenv(BOX_PROCESS_PATH_ENVIRONMENT);
+		if (envPath != null && envPath.length() > 0) {
+			System.setProperty(CLI_PROCESS_PATH_PROPERTY, envPath);
+			debug("CLI process path (from " + BOX_PROCESS_PATH_ENVIRONMENT + "): " + envPath);
+		}
+	}
 
 	/**
 	 * Installs BoxLang when needed, then launches the installed runtime and
@@ -56,6 +87,7 @@ public class CommandBoxCLIMain {
 	public static void main(String[] arguments) throws Exception {
 		registerShutdownHook();
 		debugEnabled = containsDebugFlag(arguments);
+		captureProcessPath();
 		debug("CLI Java Version: "
 				+ System.getProperty("java.vm.version", System.getProperty("java.version", "Unknown")));
 		debug("CLI Java Home: " + System.getProperty("java.home", "Unknown"));

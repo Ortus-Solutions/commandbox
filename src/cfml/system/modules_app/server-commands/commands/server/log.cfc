@@ -21,6 +21,7 @@ component {
 	 * @follow Tail the log file with the "follow" flag. Press Ctrl-C to quit.
 	 * @access View/tail the access log
 	 * @rewrites View/tail the rewrites log
+	 * @site The name of the site to view logs for when the server is in multi-site mode.
 	 **/
 	function run(
 		string name,

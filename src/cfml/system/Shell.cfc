@@ -923,10 +923,13 @@ component accessors="true" singleton {
 			if( !initialCommand ) {
 				rethrow;
 			} else {
+				try {
+					ConsolePainter.forceStop();
 
-				ConsolePainter.forceStop();
-
-				printError( e, true );
+					printError( e, true );
+				} catch ( any ex ) {
+					// ignore interupts that hit here
+				}
 			}
 		// This type of error means the user hit Ctrl-C, during a readLine() call. Duck out and move along.
 		} catch (any e) {

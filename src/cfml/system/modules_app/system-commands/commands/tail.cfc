@@ -59,6 +59,25 @@
 			var startingLength = variables.file.length();
 			variables.position = startingLength;
 
+			// A file that ends with a newline has an empty last line.  That empty line is not content, so
+			// don't let it use up one of the requested lines - step back over any trailing line endings
+			// before counting starts.
+			var trailingEndings = 0;
+			while( position > 0 ) {
+				randomAccessFile.seek( position - 1 );
+				var trailingByte = randomAccessFile.read();
+				if( trailingByte == 10 || trailingByte == 13 ) {
+					position--;
+					trailingEndings++;
+				} else {
+					break;
+				}
+			}
+			// position now sits on the first trailing line ending - start on the content before it
+			if( trailingEndings && position > 0 ) {
+				position--;
+			}
+
 			// move to the end of the file
 			randomAccessFile.seek( position );
 			// Was the last character a line feed.
@@ -94,12 +113,12 @@
 
 			} // End while
 
-			if( buffer.len() ) {
-				// Strip any CR or LF from the last (first really) line to eliminate leading line breaks in console output
-				loop times=2 {
-					if( buffer[ buffer.len() ] == 10 || buffer[ buffer.len() ] == 13 ) {
-						buffer.deleteAt( buffer.len() );
-					}
+			// Strip any CR or LF from the last (first really) line to eliminate leading line breaks in console output.
+			// The length check belongs inside the loop: trimming one line ending can leave the buffer empty -
+			// tailing a log whose last line is blank does exactly that - and buffer[ 0 ] throws.
+			loop times=2 {
+				if( buffer.len() && ( buffer[ buffer.len() ] == 10 || buffer[ buffer.len() ] == 13 ) ) {
+					buffer.deleteAt( buffer.len() );
 				}
 			}
 			buffer = createObject("java", "java.lang.String").init(buffer.reverse(), "UTF-8");
@@ -135,18 +154,26 @@
 		var position = startingLength;
 		// This lets the thread know we're still running
 		variables.tailRun = true;
+		// The scan closed the handle but left the variable set, so the follow thread would think it
+		// already has one, never seek to the end, and re-print the file from where the scan stopped
+		randomAccessFile = javaCast( 'null', 0 );
+		// The scan above rewound `position` through the file; the follow thread has to start at the end
+		position = startingLength;
 
 		try {
 			// This thread will keep redrawing the screen while the main thread waits for user input
 			var threadName = 'tail#createUUID()#';
-			thread action="run" name=threadName priority="HIGH" {
+			thread action="run" name=threadName priority="HIGH" startPos=startingLength {
 				try{
 					var buffer = [];
 					// Only keep drawing as long as the main thread is active
 					while( variables.tailRun ) {
 							if( isNull( randomAccessFile ) ) {
 								var randomAccessFile = createObject( "java", "java.io.RandomAccessFile" ).init( file, "r" );
-								randomAccessFile.seek( position );
+								// Start at the end of the file as it was when following began.  Taking it from
+								// the thread's copy of the parent scope gave the position the backward scan
+								// stopped at, which re-printed the tail of the file.
+								randomAccessFile.seek( attributes.startPos );
 							}						
 
 							// Don't convert to chars yet, just read the bytes							

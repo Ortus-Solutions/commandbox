@@ -210,7 +210,11 @@ This file will stay running the entire time the shell is open
 
 	<cfcatch type="any">
 		<cfscript>
-
+			if( cfcatch.message contains "interrupt" ) {
+				systemOutput( 'CANCELLED!', true );
+				system.setProperty( 'cfml.cli.exitCode', '1' );
+				cfexit();
+			}
 			try {
 				if( isDefined( 'wirebox' ) ) {
 					wirebox.getCacheBox().getCache( 'metadataCache' ).clearAll();
